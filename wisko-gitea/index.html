@@ -576,7 +576,7 @@
                 
                 <h1 id="wisko-gitea">wisko gitea</h1>
 <h2 id="before-you-begin-gitea-setup-info">before you begin: gitea setup info</h2>
-<p>(see <a href="https://hackmd.io/s/BkfqUw0wz">wisko setup</a> for details on how gitea was set up).</p>
+<p>(see <a href="../boot2root/">boot to root</a> for details on how gitea was set up).</p>
 <h3 id="where-is-gitea">where is gitea</h3>
 <p>The wisko gitea instance is installed to <code>$GOPATH/src/code.gitea.io/gitea</code> and there is a symlink to this directory at <code>~/gitea</code>.</p>
 <p>This directory is actually a cloned git repo, so you can see what files you've modified from the default by running a <code>git status</code>.</p>
@@ -765,7 +765,7 @@ ROOT_URL = %(PROTOCOL)s://%(DOMAIN)s/
 ./gitea web
 </code></pre>
 
-<p>(or, do it in a screen, <a href="https://hackmd.io/s/BkfqUw0wz#Installing-Gitea">as mentioned in the wisko setup doc</a>).</p>
+<p>(or, do it in a screen, <a href="../boot2root/">as mentioned in the wisko boot to root doc</a>).</p>
 <h2 id="https-certs">https certs</h2>
 <p>See the above modifications to the document about certificates. A new SSL certificate for the git subdomain (<code>git.smallmelo.com</code>) was needed, so we used certbot to make it.</p>
 <p>To explain the HTTPS certificate setup for git.smallmelo.com a bit more:</p>
