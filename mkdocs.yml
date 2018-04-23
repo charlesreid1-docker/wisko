@@ -8,7 +8,7 @@ theme:
     primary: 'green'
     accent: 'green'
   logo:
-    icon: 'bug report'
+    icon: 'cloud'
   font:
     text: 'Roboto'
     code: 'Roboto Mono'
@@ -16,3 +16,11 @@ extra_css:
   - css/custom.css
 pages:
   - 'Index' : 'index.md'
+  - 'Wisko Boot to Root': 'boot2root.md'
+  - 'Wisko FAQ': 'faq.md'
+  - 'Locked Out of Wisko': 'locked-out.md'
+  - 'smallmelo.com Migration: Part 1': 'smallmelo-migration-1.md'
+  - 'smallmelo.com Migration: Part 2': 'smallmelo-migration-2.md'
+  - 'smallmelo.com Migration: Part 3': 'smallmelo-migration-3.md'
+  - 'Wisko Gitea': 'wisko-gitea.md'
+  - 'Connecting to Geoserver Over HTTPS': 'geoserver-https.md'
