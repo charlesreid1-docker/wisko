@@ -9,4 +9,68 @@
     </url>
     
 
+    
+    <url>
+     <loc>/boot2root/</loc>
+     <lastmod>2018-04-23</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/faq/</loc>
+     <lastmod>2018-04-23</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/locked-out/</loc>
+     <lastmod>2018-04-23</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/smallmelo-migration-1/</loc>
+     <lastmod>2018-04-23</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/smallmelo-migration-2/</loc>
+     <lastmod>2018-04-23</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/smallmelo-migration-3/</loc>
+     <lastmod>2018-04-23</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/wisko-gitea/</loc>
+     <lastmod>2018-04-23</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/geoserver-https/</loc>
+     <lastmod>2018-04-23</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
 </urlset>

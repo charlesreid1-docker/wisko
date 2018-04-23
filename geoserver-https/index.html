@@ -1,0 +1,652 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+      
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.pipeline.stopwords" content="True">
+      
+        <meta name="lang:search.pipeline.trimmer" content="True">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="../">
+      <meta name="generator" content="mkdocs-0.17.3, mkdocs-material-2.7.2">
+    
+    
+      
+        <title>Connecting to Geoserver Over HTTPS - pod-charlesreid1</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/application.8d40d89b.css">
+      
+        <link rel="stylesheet" href="../assets/stylesheets/application-palette.6079476c.css">
+      
+    
+    
+      <script src="../assets/javascripts/modernizr.1aa3b519.js"></script>
+    
+    
+      <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+      
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+        <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
+      
+      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    
+    
+      <link rel="stylesheet" href="../css/custom.css">
+    
+    
+  </head>
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="green" data-md-color-accent="green">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="search" autocomplete="off">
+    <label class="md-overlay" data-md-component="overlay" for="drawer"></label>
+    
+      <a href="#installing-geoserver-connecting-over-https" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a href=".." title="pod-charlesreid1" class="md-header-nav__button md-logo">
+          
+            <i class="md-icon">cloud</i>
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            
+              <span class="md-header-nav__topic">
+                pod-charlesreid1
+              </span>
+              <span class="md-header-nav__topic">
+                Connecting to Geoserver Over HTTPS
+              </span>
+            
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          
+            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+            
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+          
+        
+      </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      <main class="md-main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="drawer">
+    <span class="md-nav__button md-logo">
+      
+        <i class="md-icon">cloud</i>
+      
+    </span>
+    pod-charlesreid1
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." title="Index" class="md-nav__link">
+      Index
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../boot2root/" title="Wisko Boot to Root" class="md-nav__link">
+      Wisko Boot to Root
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../faq/" title="Wisko FAQ" class="md-nav__link">
+      Wisko FAQ
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../locked-out/" title="Locked Out of Wisko" class="md-nav__link">
+      Locked Out of Wisko
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../smallmelo-migration-1/" title="smallmelo.com Migration: Part 1" class="md-nav__link">
+      smallmelo.com Migration: Part 1
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../smallmelo-migration-2/" title="smallmelo.com Migration: Part 2" class="md-nav__link">
+      smallmelo.com Migration: Part 2
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../smallmelo-migration-3/" title="smallmelo.com Migration: Part 3" class="md-nav__link">
+      smallmelo.com Migration: Part 3
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../wisko-gitea/" title="Wisko Gitea" class="md-nav__link">
+      Wisko Gitea
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="toc">
+        Connecting to Geoserver Over HTTPS
+      </label>
+    
+    <a href="./" title="Connecting to Geoserver Over HTTPS" class="md-nav__link md-nav__link--active">
+      Connecting to Geoserver Over HTTPS
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-jre-8" title="Install JRE 8" class="md-nav__link">
+    Install JRE 8
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-geoserver-folder" title="Create geoserver folder" class="md-nav__link">
+    Create geoserver folder
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#downloaded-geoserver-on-my-computer-then-ftp-it-to-wisko" title="Downloaded geoserver on my computer, then ftp it to wisko" class="md-nav__link">
+    Downloaded geoserver on my computer, then ftp it to wisko
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#add-env-variable" title="add env variable" class="md-nav__link">
+    add env variable
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#make-myself-the-owner" title="make myself the owner" class="md-nav__link">
+    make myself the owner
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#start-geoserver" title="start geoserver" class="md-nav__link">
+    start geoserver
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-certs" title="setting up certs" class="md-nav__link">
+    setting up certs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#finishing-touches" title="Finishing Touches" class="md-nav__link">
+    Finishing Touches
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-solution" title="The solution:" class="md-nav__link">
+    The solution:
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-jre-8" title="Install JRE 8" class="md-nav__link">
+    Install JRE 8
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-geoserver-folder" title="Create geoserver folder" class="md-nav__link">
+    Create geoserver folder
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#downloaded-geoserver-on-my-computer-then-ftp-it-to-wisko" title="Downloaded geoserver on my computer, then ftp it to wisko" class="md-nav__link">
+    Downloaded geoserver on my computer, then ftp it to wisko
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#add-env-variable" title="add env variable" class="md-nav__link">
+    add env variable
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#make-myself-the-owner" title="make myself the owner" class="md-nav__link">
+    make myself the owner
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#start-geoserver" title="start geoserver" class="md-nav__link">
+    start geoserver
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-certs" title="setting up certs" class="md-nav__link">
+    setting up certs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#finishing-touches" title="Finishing Touches" class="md-nav__link">
+    Finishing Touches
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-solution" title="The solution:" class="md-nav__link">
+    The solution:
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                
+                <h1 id="installing-geoserver-connecting-over-https">Installing Geoserver &amp; Connecting Over HTTPS</h1>
+<p><a href="http://docs.geoserver.org/stable/en/user/installation/linux.html">Installing Geoserver instructions</a></p>
+<h2 id="install-jre-8">Install JRE 8</h2>
+<p><a href="https://www.digitalocean.com/community/tutorials/how-to-install-java-with-apt-get-on-ubuntu-16-04">install jre 8</a></p>
+<pre><code>sudo apt-get update
+sudo apt-get install default-jre
+</code></pre>
+
+<h2 id="create-geoserver-folder">Create geoserver folder</h2>
+<p>in <code>/usr/share</code>:</p>
+<pre><code>mkdir geoserver
+</code></pre>
+
+<h2 id="downloaded-geoserver-on-my-computer-then-ftp-it-to-wisko">Downloaded geoserver on my computer, then ftp it to wisko</h2>
+<ul>
+<li>Download geoserver files on my computer</li>
+<li>unzip</li>
+<li>copy files from the geoserver folder onto wisko:</li>
+</ul>
+<p>from my computer:</p>
+<pre><code>scp -r /Users/melo/Desktop/geoserver-2.13.0  melo@159.65.75.41:/usr/share/geoserver
+</code></pre>
+
+<p>permission denied. fixed with:</p>
+<pre><code>sudo chown -R $USER:$USER /usr/share/geoserver
+
+</code></pre>
+
+<p>but then i decided to use FileZilla to transfer the files once I fixed my pemissions. Maybe another day, scp.</p>
+<h2 id="add-env-variable">add env variable</h2>
+<p><code>echo "export GEOSERVER_HOME=/usr/share/geoserver" &gt;\&gt; ~/.profile</code></p>
+<h2 id="make-myself-the-owner">make myself the owner</h2>
+<p><code>sudo chown -R USER_NAME /usr/share/geoserver/</code></p>
+<h2 id="start-geoserver">start geoserver</h2>
+<pre><code>cd /usr/share/geoserver/bin
+sh startup.sh
+
+</code></pre>
+
+<hr />
+<h2 id="setting-up-certs">setting up certs</h2>
+<p>To enable SSL connections to the geoserver, let Apache handle the SSL connections, and then pass the requests on to geoserver locally.</p>
+<p>Apache already has certificates living at:</p>
+<pre><code>/etc/letsencrypt/live/smallmelo.com
+</code></pre>
+
+<p>and an HTTPS configuration file at:</p>
+<pre><code>/etc/apache2/sites-avaiable/smallmelo-le-ssl.conf
+</code></pre>
+
+<p>Modify the SSL configuration file to accept any URLs ending in <code>geoserver/</code> and forward them to the geoserver on port 8080.</p>
+<p>There should be a <code>&lt;VirtualHost&gt;</code> block that controls the settings for HTTPS requests. Add a <code>&lt;Location&gt;</code> block to configure the behavior for geoserver URLs (note the order):</p>
+<pre><code>&lt;VirtualHost *:443&gt;
+
+    ...
+
+    # This block is new:
+    &lt;Location /geoserver&gt;
+        ProxyPass         http://localhost:8080/geoserver
+        ProxyPassReverse  http://localhost:8080/geoserver
+        Order allow,deny
+        Allow from all
+    &lt;/Location&gt;
+
+    ...
+
+    # This must come after /geoserver block
+    &lt;Directory /var/www/smallmelo/public_html&gt;
+        ...
+    &lt;/Directory&gt;
+
+&lt;/Location&gt;
+</code></pre>
+
+<p>Note that the reverse proxy we have set up will forward requests <em>unencrypted</em> to the geoserver at port 8080, but because this happens within a single machine, there is no need to encrypt it.</p>
+<p>Now ensure the proxy mod is installed:</p>
+<pre><code>$ a2enmod proxy
+</code></pre>
+
+<p>and restart the server:</p>
+<pre><code>$ sudo service apache2 restart
+</code></pre>
+
+<p>One other thing we had to do was ensure that Jetty/geoserver were only listening for requests locally. This requies binding Jetty to the IP address 127.0.0.1.</p>
+<p>To do this, we modify one parameter in <code>app.ini</code>:</p>
+<pre><code>jetty.host=127.0.0.1
+</code></pre>
+
+<p>Restart geoserver:</p>
+<pre><code>killall geoserver &amp;&amp; sh /usr/share/geoserver/bin/startup.sh
+</code></pre>
+
+<h2 id="finishing-touches">Finishing Touches</h2>
+<p>Because Geosever was setup in order to be used in a dev environment for an xcode project, we needed to be able to ping a wms service from the site.  </p>
+<p>The attempt resulted in <a href="https://gist.github.com/Smallmelo/acb41ea71dea6ca64b0652973ed04158">an error</a>.</p>
+<p><a href="https://gist.github.com/Smallmelo/acb41ea71dea6ca64b0652973ed04158#file-gistfile1-txt-L2572">This line</a> demonstrates that your network trace is seeing "localhost:8080", which it should not. So, it's an indication that the server might be returning URLs to resources that say "localhost:8080"</p>
+<h3 id="the-solution">The solution:</h3>
+<p>Update the proxy url in Geoserver's Global Settings:
+<img alt="Geoserver proxy settings" src="https://i.imgur.com/pQYIT0v.png" /></p>
+                
+                  
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../wisko-gitea/" title="Wisko Gitea" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Wisko Gitea
+              </span>
+            </div>
+          </a>
+        
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        powered by
+        <a href="http://www.mkdocs.org">MkDocs</a>
+        and
+        <a href="https://squidfunk.github.io/mkdocs-material/">
+          Material for MkDocs</a>
+      </div>
+      
+        
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/application.0cf9b500.js"></script>
+      
+      <script>app.initialize({version:"0.17.3",url:{base:".."}})</script>
+      
+        <script src="../search/require.js"></script>
+      
+        <script src="../search/search.js"></script>
+      
+    
+    
+      
+    
+  </body>
+</html>

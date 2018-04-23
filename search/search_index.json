@@ -9,6 +9,506 @@
             "location": "/#wisko-manual",
             "text": "The wisko manual.  IP: 159.65.75.41  wisko boot to root  by @charles  git repo - wisko dotfiles  by @charles  wisko FAQ  by @charles  locked out of wisko  by @melo and @charles  smallmelo.com migration: part 1 (ssh + wordpress)  by @melo  smallmelo.com migration: part 2 (all the things)  by @melo  smallmelo.com migration: part 3 (allthehatsformaps to smallmelo)  by @melo  wisko gitea  by @charles  installing geoserver and connecting over https  by @melo and @charles",
             "title": "Wisko Manual"
+        },
+        {
+            "location": "/boot2root/",
+            "text": "wisko\n\n\nGetting to a Shell\n\n\nHardware\n\n\nwisko is a higher-end 1-CPU Digital Ocean droplet.\n\n 1 CPU\n\n 50 GB SSD\n* 2 GB RAM\n\n\nIP address: 159.65.75.41\n\n\nSpin Up Hardware\n\n\n\n\n\n\nFollow the Digital Ocean steps to spin up a droplet in the SF region.\n\n\n\n\n\n\nOnce the droplet is created, get the IP address.\n\n\n\n\n\n\nPro tip: find your ssh key in \n~/.ssh/id_rsa.pub\n and paste it in during the Droplet creation process to avoid password issues.\n\n\n\n\n\n\nSet DNS Records\n\n\nAdd the following DNS records:\n\n\nA Record\n:\n\n Record: none (set to @ automatically)\n\n Value: 138.68.10.168\n\n\nA Record\n:\n\n Record: git\n\n Value: 138.68.10.168\n\n\nCNAME Record\n:\n* Record: \n\n\nConnect to Droplet\n\n\nCheck that the Droplet has been booted and is listening:\n\n\n$ ping -c 4 138.68.10.168\nPING 138.68.10.168 (138.68.10.168): 56 data bytes\n64 bytes from 138.68.10.168: icmp_seq=0 ttl=56 time=28.494 ms\n64 bytes from 138.68.10.168: icmp_seq=1 ttl=56 time=26.120 ms\n64 bytes from 138.68.10.168: icmp_seq=2 ttl=56 time=25.972 ms\n64 bytes from 138.68.10.168: icmp_seq=3 ttl=56 time=27.232 ms\n\n--- 138.68.10.168 ping statistics ---\n4 packets transmitted, 4 packets received, 0.0% packet loss\nround-trip min/avg/max/stddev = 25.972/26.955/28.494/1.014 ms\n\n\n\n\nNow connect to the droplet. By default, you log in as as the root user:\n\n\n$ ssh root@138.68.10.168\n\n[...bunch of login stuff...]\n\nroot@ubuntu-s-1vcpu-2gb-sfo2-01:~#\n\n\n\n\nNow we're ready to get started.\n\n\nPrepare for LAMP\n\n\nSee DO guide\n\n\nMake Normal User\n\n\nAdd a non-root user:\n\n\nadduser melo\npasswd melo\nusermod -aG sudo melo\n\n\n\n\n(While we're at it, create a git user as well for gitea):\n\n\nadduser git\npasswd git\n\n\n\n\nPrepare to SSH as that user:\n\n\nmkdir /home/melo/.ssh\nchown melo:melo /home/melo/.ssh\nchmod 700 /home/melo/.ssh\nchmod 600 /home/melo/.ssh/authorized_key\n\n\n\n\nSSH as this user in a separate window (keep one window open and logged in as root!), and test sudo abilities:\n\n\nsudo whoami\n\n\n\n\nDisable root login via ssh:\n\n\nvim /etc/ssh/sshd_config\n\n\n\n\nChange \nPermitRootLogin\n to \nno\n. \n\n\nRestart SSH service:\n\n\nsudo service ssh restart\n\n\n\n\nNow log out and log back in as user melo.\n\n\nDotfiles Bootstrap\n\n\nDotfiles link\n\n\nStart out with the wisko dotfiles repository:\n\n\napt-get install git\ncd ~\ngit clone https://charlesreid1.com:3000/dotfiles/wisko.git\ncd wisko\n\n\n\n\nPrepare for bootstrap:\n\n\n./pre_bootstrap.sh\n\n\n\n\nNow bootstrap:\n\n\n./bootstrap.sh\n\n\n\n\nThen set the machine name:\n\n\nsudo ./set_machine_name.sh\n\n\n\n\nNow log out and log back in.\n\n\nAptitude\n\n\nInstall a bunch of the packages that are needed:\n\n\ncd wisko\nsudo ./install_packages.sh\n\n\n\n\nNow we're ready to start on the LAMP server.\n\n\nInstalling Apache\n\n\nsudo apt-get install -y apache2\n\n\n\n\nEdit Apache config file:\n\n\nsudo vim /etc/apache2/sites-enabled/000-default.conf\n\n\n\n\nSet the server name:\n\n\nServerName www.allthehatsformaps.com\n...\nDocumentRoot /var/www/htdocs/\n\n\n\n\nAlso make note of Apache username, should be \nwww-data\n.\n\n\nCheck for syntax errors:\n\n\nsudo apache2ctl configtest\n\n\n\n\nRestart Apache:\n\n\nsudo service apache2 restart\n\n\n\n\nInstalling MySQL\n\n\nsudo apt-get install -y mysql-server\n\n\n\n\nThis will ask you to set a root password.\n\n\nOnce the installation is complete, run:\n\n\nmysql_secure_installation\n\n\n\n\nto lock down MySQL. Do not configure \nVALIDATE PASSWORD PLUGIN\n.\n\n\nInstalling PHP\n\n\nsudo apt-get install -y php libapache2-mod-php php-mcrypt php-mysql php-cli\n\n\n\n\nMake Apache look for \nindex.php\n by editing:\n\n\n/etc/apache2/mods-enabled/dir.conf\n\n\n\n\nand changing:\n\n\nDirectoryIndex index.html \n\n\n\n\nto this:\n\n\nDirectoryIndex index.php index.html \n\n\n\n\nRestart apache:\n\n\nsudo service apache2 restart\n\n\n\n\nInstalling Wordpress\n\n\nboom\n\n\nDownload latest Wordpress:\n\n\ncd /tmp\nwget https://wordpress.org/latest.tar.gz\ntar xzf latest.tar.gz\n\n\n\n\nThis extracts to \nwordpress/\n. Now open MySQL and create a database for wordpress:\n\n\n$ mysql -u root -p\n\nmysql> CREATE DATABASE wordpress;\nmysql> CREATE USER 'wpsql'@'localhost' IDENTIFIED BY \"yourpasswordgoeshere\";\nmysql> GRANT ALL PRIVILEGES ON wordpress.* TO \"wpsql\"@\"localhost\"\n\n\n\n\nThis creates a MySQL user \nwpsql\n and a MySQL database called \nwordpress\n.\n\n\nConfigure Wordpress by copying example config file to actual config file:\n\n\ncp wp-config-sample.php wp-config.php\n\n\n\n\nEdit \nwp-config.php\n and change the following:\n\n DB_NAME\n\n DB_USER\n\n DB_PASSWORD\n\n DB_HOST\n\n DB_CHARSET\n\n DB_COLLATE\n\n\nUse \nonline secret generator\n to set secret key values.\n\n\nNow move the wordpress folder to your web root:\n\n\nmv wordpress /var/www/htdocs/wordpress/\n\n\n\n\nChange permissions so wordpress directory is owned by the Apache user:\n\n\nchown -R www-data:www-data /var/www/htdocs/wordpress\n\n\n\n\nVisit the Wordpress site and set it up:\n\n\n<ip-addr-of-machine>/wordpress\n\n\n\n\nOnce you have set up the Wordpress site, you should protect the \nwp-config.php\n file:\n\n\nsudo chown melo:melo wp-config.php\n\n\n\n\nFTP Server\n\n\nTo upgrade Wordpress you need an ftp server running. vsftpd is a lightweight ftp server. To install it:\n\n\nsudo apt-get install vsftpd\n\n\n\n\nBy default, the \nlocal_enable\n option is set in \n/etc/vsftpd.conf\n, meaning you can log in to the ftp server using system credentials.\n\n\nTo check and make sure the process of uploading files via FTP works, try upgrading a plugin or installing/removing a plugin.\n\n\nInstalling Gitea\n\n\nGoenv: To Manage Go Version\n\n\nStart by installing goenv:\n\n\ngit clone https://github.com/syndbg/goenv.git ~/.goenv\n\n\n\n\nNow add .goenv to your path in .bash_profile so goenv is a command\n\n\n# add these line to ~/.bash_profile\nexport GOENV_ROOT=\"$HOME/.goenv\"\nexport PATH=\"$GOENV_ROOT/bin:$PATH\"\n\n\n\n\nNow source it:\n\n\nsource ~/.bash_profile\n\n\n\n\nList latest versions of go:\n\n\ngoenv install -l\n\n\n\n\nPick one to install:\n\n\ngoenv install 1.7.5\ngoenv global 1.7.5\n\n\n\n\nNow set this as the go version:\n\n\neval \"$(goenv init -)\"\n\n\n\n\nYou will need to execute the above command \neach time you wish to use the goenv version of Go.\n\n\n(Alternatively, you can add it to \n.bashrc\n to run it in each new shell.)\n\n\nGitea: Git Web Server\n\n\nInstallation of gitea from source\n\n\ngo get -d -u code.gitea.io/gitea\ncd $GOPATH/src/code.gitea.io/gitea\n\n\n\n\nNow check out the version of gitea that you want to use:\n\n\ngit branch -a\ngit checkout origin/release/v1.2\n\n\n\n\nBuild with tag \nbindata\n:\n\n\nTAGS=\"bindata\" make generate build\n\n\n\n\nThe gitea binary is entirely self-contained. Before you run the binary, create a folder for gitea to use to store repositories (this should be somewhere you have read/write access, like \n~/.gitea\n):\n\n\nmkdir ~/.gitea\n\n\n\n\nWe will point gitea to this directory in the next step. To run the binary from the current directory as the current user:\n\n\n./gitea web\n\n\n\n\nNow you can navigate to \n<server-ip-address>:3000\n to set up gitea.\n\n\nSet Up Gitea (via Browser)\n\n\nVisit \n<server-ip-address>:3000\n in the browser to set up Gitea. You will need to set up a database, and we can use MySQL again. First, create a gitea user in MySQL:\n\n\n$ mysql -u root -p\n\nmysql> CREATE DATABASE gitea;\nmysql> CREATE USER 'giteasql'@'localhost' IDENTIFIED BY \"yourpasswordgoeshere\";\nmysql> GRANT ALL PRIVILEGES ON gitea.* TO \"giteasql\"@\"localhost\"\n\n\n\n\nNow you should be able to punch in all your settings. Make sure you change the address of the app from \nlocalhost:3000\n to \n<server-ip-address>:3000\n.\n\n\nUpdating Configuration/Templates\n\n\nThe path where gitea is installed is here:\n\n\n/home/melo/gocode/src/code.gitea.io/gitea\n\n\n\n\navailable as a shortcut in the home directory:\n\n\n$ ll ~/\n...\nlrwxrwxrwx  1 melo melo   30 Feb 24 22:17 gitea -> gocode/src/code.gitea.io/gitea/\n\n\n\n\nConfiguration file for gitea is located here:\n\n\n~/gitea/custom/conf/app.ini\n\n\n\n\nIf you change the config file or any page templates, you will have to re-build the binary for the changes to take effect. \n\n\nTo rebuild the go binary, just set your go version with goenv and re-execute the make command from above:\n\n\neval \"$(goenv init -)\"\ncd ~/gitea\nTAGS=\"bindata\" make generate build\n\n\n\n\nErrors\n\n\nNote: if you see the following error, check which version of go you are using:\n\n\ngo build -i -v  -tags 'bindata' -ldflags '-s -w -X \"main.Version=1.2.3\" -X \"main.Tags=bindata\"' -o gitea\nvendor/code.gitea.io/git/command.go:9:2: cannot find package \"context\" in any of:\n    /home/melo/gocode/src/code.gitea.io/gitea/vendor/context (vendor tree)\n    /usr/lib/go-1.6/src/context (from $GOROOT)\n    /home/melo/gocode/src/context (from $GOPATH)\nMakefile:205: recipe for target 'gitea' failed\nmake: *** [gitea] Error 1\n\n\n\n\nWhen you run \nwhich go\n you should see \n\n\n$ which go\n/home/melo/.goenv/shims/go\n\n\n\n\nIf you see this, you will have problems:\n\n\n$ which go\n/usr/bin/go",
+            "title": "Wisko Boot to Root"
+        },
+        {
+            "location": "/boot2root/#wisko",
+            "text": "",
+            "title": "wisko"
+        },
+        {
+            "location": "/boot2root/#getting-to-a-shell",
+            "text": "",
+            "title": "Getting to a Shell"
+        },
+        {
+            "location": "/boot2root/#hardware",
+            "text": "wisko is a higher-end 1-CPU Digital Ocean droplet.  1 CPU  50 GB SSD\n* 2 GB RAM  IP address: 159.65.75.41",
+            "title": "Hardware"
+        },
+        {
+            "location": "/boot2root/#spin-up-hardware",
+            "text": "Follow the Digital Ocean steps to spin up a droplet in the SF region.    Once the droplet is created, get the IP address.    Pro tip: find your ssh key in  ~/.ssh/id_rsa.pub  and paste it in during the Droplet creation process to avoid password issues.",
+            "title": "Spin Up Hardware"
+        },
+        {
+            "location": "/boot2root/#set-dns-records",
+            "text": "Add the following DNS records:  A Record :  Record: none (set to @ automatically)  Value: 138.68.10.168  A Record :  Record: git  Value: 138.68.10.168  CNAME Record :\n* Record:",
+            "title": "Set DNS Records"
+        },
+        {
+            "location": "/boot2root/#connect-to-droplet",
+            "text": "Check that the Droplet has been booted and is listening:  $ ping -c 4 138.68.10.168\nPING 138.68.10.168 (138.68.10.168): 56 data bytes\n64 bytes from 138.68.10.168: icmp_seq=0 ttl=56 time=28.494 ms\n64 bytes from 138.68.10.168: icmp_seq=1 ttl=56 time=26.120 ms\n64 bytes from 138.68.10.168: icmp_seq=2 ttl=56 time=25.972 ms\n64 bytes from 138.68.10.168: icmp_seq=3 ttl=56 time=27.232 ms\n\n--- 138.68.10.168 ping statistics ---\n4 packets transmitted, 4 packets received, 0.0% packet loss\nround-trip min/avg/max/stddev = 25.972/26.955/28.494/1.014 ms  Now connect to the droplet. By default, you log in as as the root user:  $ ssh root@138.68.10.168\n\n[...bunch of login stuff...]\n\nroot@ubuntu-s-1vcpu-2gb-sfo2-01:~#  Now we're ready to get started.",
+            "title": "Connect to Droplet"
+        },
+        {
+            "location": "/boot2root/#prepare-for-lamp",
+            "text": "See DO guide",
+            "title": "Prepare for LAMP"
+        },
+        {
+            "location": "/boot2root/#make-normal-user",
+            "text": "Add a non-root user:  adduser melo\npasswd melo\nusermod -aG sudo melo  (While we're at it, create a git user as well for gitea):  adduser git\npasswd git  Prepare to SSH as that user:  mkdir /home/melo/.ssh\nchown melo:melo /home/melo/.ssh\nchmod 700 /home/melo/.ssh\nchmod 600 /home/melo/.ssh/authorized_key  SSH as this user in a separate window (keep one window open and logged in as root!), and test sudo abilities:  sudo whoami  Disable root login via ssh:  vim /etc/ssh/sshd_config  Change  PermitRootLogin  to  no .   Restart SSH service:  sudo service ssh restart  Now log out and log back in as user melo.",
+            "title": "Make Normal User"
+        },
+        {
+            "location": "/boot2root/#dotfiles-bootstrap",
+            "text": "Dotfiles link  Start out with the wisko dotfiles repository:  apt-get install git\ncd ~\ngit clone https://charlesreid1.com:3000/dotfiles/wisko.git\ncd wisko  Prepare for bootstrap:  ./pre_bootstrap.sh  Now bootstrap:  ./bootstrap.sh  Then set the machine name:  sudo ./set_machine_name.sh  Now log out and log back in.",
+            "title": "Dotfiles Bootstrap"
+        },
+        {
+            "location": "/boot2root/#aptitude",
+            "text": "Install a bunch of the packages that are needed:  cd wisko\nsudo ./install_packages.sh  Now we're ready to start on the LAMP server.",
+            "title": "Aptitude"
+        },
+        {
+            "location": "/boot2root/#installing-apache",
+            "text": "sudo apt-get install -y apache2  Edit Apache config file:  sudo vim /etc/apache2/sites-enabled/000-default.conf  Set the server name:  ServerName www.allthehatsformaps.com\n...\nDocumentRoot /var/www/htdocs/  Also make note of Apache username, should be  www-data .  Check for syntax errors:  sudo apache2ctl configtest  Restart Apache:  sudo service apache2 restart",
+            "title": "Installing Apache"
+        },
+        {
+            "location": "/boot2root/#installing-mysql",
+            "text": "sudo apt-get install -y mysql-server  This will ask you to set a root password.  Once the installation is complete, run:  mysql_secure_installation  to lock down MySQL. Do not configure  VALIDATE PASSWORD PLUGIN .",
+            "title": "Installing MySQL"
+        },
+        {
+            "location": "/boot2root/#installing-php",
+            "text": "sudo apt-get install -y php libapache2-mod-php php-mcrypt php-mysql php-cli  Make Apache look for  index.php  by editing:  /etc/apache2/mods-enabled/dir.conf  and changing:  DirectoryIndex index.html   to this:  DirectoryIndex index.php index.html   Restart apache:  sudo service apache2 restart",
+            "title": "Installing PHP"
+        },
+        {
+            "location": "/boot2root/#installing-wordpress",
+            "text": "boom  Download latest Wordpress:  cd /tmp\nwget https://wordpress.org/latest.tar.gz\ntar xzf latest.tar.gz  This extracts to  wordpress/ . Now open MySQL and create a database for wordpress:  $ mysql -u root -p\n\nmysql> CREATE DATABASE wordpress;\nmysql> CREATE USER 'wpsql'@'localhost' IDENTIFIED BY \"yourpasswordgoeshere\";\nmysql> GRANT ALL PRIVILEGES ON wordpress.* TO \"wpsql\"@\"localhost\"  This creates a MySQL user  wpsql  and a MySQL database called  wordpress .  Configure Wordpress by copying example config file to actual config file:  cp wp-config-sample.php wp-config.php  Edit  wp-config.php  and change the following:  DB_NAME  DB_USER  DB_PASSWORD  DB_HOST  DB_CHARSET  DB_COLLATE  Use  online secret generator  to set secret key values.  Now move the wordpress folder to your web root:  mv wordpress /var/www/htdocs/wordpress/  Change permissions so wordpress directory is owned by the Apache user:  chown -R www-data:www-data /var/www/htdocs/wordpress  Visit the Wordpress site and set it up:  <ip-addr-of-machine>/wordpress  Once you have set up the Wordpress site, you should protect the  wp-config.php  file:  sudo chown melo:melo wp-config.php",
+            "title": "Installing Wordpress"
+        },
+        {
+            "location": "/boot2root/#ftp-server",
+            "text": "To upgrade Wordpress you need an ftp server running. vsftpd is a lightweight ftp server. To install it:  sudo apt-get install vsftpd  By default, the  local_enable  option is set in  /etc/vsftpd.conf , meaning you can log in to the ftp server using system credentials.  To check and make sure the process of uploading files via FTP works, try upgrading a plugin or installing/removing a plugin.",
+            "title": "FTP Server"
+        },
+        {
+            "location": "/boot2root/#installing-gitea",
+            "text": "",
+            "title": "Installing Gitea"
+        },
+        {
+            "location": "/boot2root/#goenv-to-manage-go-version",
+            "text": "Start by installing goenv:  git clone https://github.com/syndbg/goenv.git ~/.goenv  Now add .goenv to your path in .bash_profile so goenv is a command  # add these line to ~/.bash_profile\nexport GOENV_ROOT=\"$HOME/.goenv\"\nexport PATH=\"$GOENV_ROOT/bin:$PATH\"  Now source it:  source ~/.bash_profile  List latest versions of go:  goenv install -l  Pick one to install:  goenv install 1.7.5\ngoenv global 1.7.5  Now set this as the go version:  eval \"$(goenv init -)\"  You will need to execute the above command  each time you wish to use the goenv version of Go.  (Alternatively, you can add it to  .bashrc  to run it in each new shell.)",
+            "title": "Goenv: To Manage Go Version"
+        },
+        {
+            "location": "/boot2root/#gitea-git-web-server",
+            "text": "Installation of gitea from source  go get -d -u code.gitea.io/gitea\ncd $GOPATH/src/code.gitea.io/gitea  Now check out the version of gitea that you want to use:  git branch -a\ngit checkout origin/release/v1.2  Build with tag  bindata :  TAGS=\"bindata\" make generate build  The gitea binary is entirely self-contained. Before you run the binary, create a folder for gitea to use to store repositories (this should be somewhere you have read/write access, like  ~/.gitea ):  mkdir ~/.gitea  We will point gitea to this directory in the next step. To run the binary from the current directory as the current user:  ./gitea web  Now you can navigate to  <server-ip-address>:3000  to set up gitea.",
+            "title": "Gitea: Git Web Server"
+        },
+        {
+            "location": "/boot2root/#set-up-gitea-via-browser",
+            "text": "Visit  <server-ip-address>:3000  in the browser to set up Gitea. You will need to set up a database, and we can use MySQL again. First, create a gitea user in MySQL:  $ mysql -u root -p\n\nmysql> CREATE DATABASE gitea;\nmysql> CREATE USER 'giteasql'@'localhost' IDENTIFIED BY \"yourpasswordgoeshere\";\nmysql> GRANT ALL PRIVILEGES ON gitea.* TO \"giteasql\"@\"localhost\"  Now you should be able to punch in all your settings. Make sure you change the address of the app from  localhost:3000  to  <server-ip-address>:3000 .",
+            "title": "Set Up Gitea (via Browser)"
+        },
+        {
+            "location": "/boot2root/#updating-configurationtemplates",
+            "text": "The path where gitea is installed is here:  /home/melo/gocode/src/code.gitea.io/gitea  available as a shortcut in the home directory:  $ ll ~/\n...\nlrwxrwxrwx  1 melo melo   30 Feb 24 22:17 gitea -> gocode/src/code.gitea.io/gitea/  Configuration file for gitea is located here:  ~/gitea/custom/conf/app.ini  If you change the config file or any page templates, you will have to re-build the binary for the changes to take effect.   To rebuild the go binary, just set your go version with goenv and re-execute the make command from above:  eval \"$(goenv init -)\"\ncd ~/gitea\nTAGS=\"bindata\" make generate build",
+            "title": "Updating Configuration/Templates"
+        },
+        {
+            "location": "/boot2root/#errors",
+            "text": "Note: if you see the following error, check which version of go you are using:  go build -i -v  -tags 'bindata' -ldflags '-s -w -X \"main.Version=1.2.3\" -X \"main.Tags=bindata\"' -o gitea\nvendor/code.gitea.io/git/command.go:9:2: cannot find package \"context\" in any of:\n    /home/melo/gocode/src/code.gitea.io/gitea/vendor/context (vendor tree)\n    /usr/lib/go-1.6/src/context (from $GOROOT)\n    /home/melo/gocode/src/context (from $GOPATH)\nMakefile:205: recipe for target 'gitea' failed\nmake: *** [gitea] Error 1  When you run  which go  you should see   $ which go\n/home/melo/.goenv/shims/go  If you see this, you will have problems:  $ which go\n/usr/bin/go",
+            "title": "Errors"
+        },
+        {
+            "location": "/faq/",
+            "text": "wisko FAQ\n\n\nApache\n\n\nLink: \nApache on the Ubuntu Wiki\n\n\nApache 2 was installed using the command \napt-get install apache2\n.\n\n\nrunning apache2\n\n\nTo start, restart, or stop apache2 (it should start automatically on boot):\n\n\n$ sudo service apache2 start\n$ sudo service apache2 restart\n$ sudo service apache2 stop\n\n\n\n\napache2 configuration files\n\n\nApache keeps its configuration files in \n/etc/apache2/\n.\n\n\nApache is configured to host multiple websites, so there are multiple configuration files. \n\n\nThe global Apache config file is \n/etc/apache2/apache2.conf\n.\n\n\nSite-specific Apache config files are in \n/etc/apache2/sites-available\n. To make a new site, just add a new file to that folder (name it whatever you'd like). There is an existing default configuration in that folder.\n\n\nThe site configuration file is where you edit the folder it serves up, the port it listens on, what requests it is listening for (subdomain or full domain), etc.\n\n\nWhen you have edited a site's configuration file, enable it using the \na2ensite\n command:\n\n\n$ a2ensite name_of_site\n\n\n\n\nLikewise, disable the site with \na2dissite\n:\n\n\n$ a2dissite name_of_site\n\n\n\n\nPHP\n\n\nLink: \nLAMP Server on Ubuntu Wiki\n\n\nPHP was installed using aptitude.\n\n\nrunning php\n\n\nPHP is a programming language designed for web browsers, so you don't need to start it - Apache will handle that. (Apache has a PHP module that has been enabled.)\n\n\nphp configuration files\n\n\nPHP also has multiple configuration files, but we're only interested in the Apache-PHP configuration file at \n/etc/php5/apache2/php.ini\n. The main thing that you would change here is the max file upload size (10 MB by default) and whether PHP prints out errors (\"debug\" mode).\n\n\nMySQL\n\n\nLink: \nMySQL on Ubuntu Wiki\n\n\nMySQL server was installed using aptitude.\n\n\nnetworking\n\n\nMySQL will listen on port 3306 for incoming requests on the local machine \nonly\n (it is bound to the address 127.0.0.1:3306). That means no outside computers can communicate with MySQL. This can be changed in the configuration file.\n\n\nrunning mysql\n\n\nTo run the MySQL server in the background (it should start automatically on boot), run:\n\n\n$ sudo service mysql start\n\n\n\n\nTo get a MySQL shell, run MySQL from the command line:\n\n\n$ mysql -u root -p\n\n\n\n\nThis will prompt you for your MySQL password.\n\n\nTo make a new MySQL user, log in as the root user and run:\n\n\nmysql> CREATE USER 'newuser'@'localhost' IDENTIFIED BY \"newpassword\";\n\n\n\n\nTo create a database and give the new user permission to edit that database:\n\n\nmysql> CREATE DATABASE newdb;\nmysql> GRANT ALL PRIVILEGES ON newdb.* TO \"newuser\"@\"localhost\";\n\n\n\n\nMySQL is picky about quotations.\n\n\nmysql configuration files\n\n\nThe main MySQL configuration file is in \n/etc/mysql/mysql.cnf\n.\n\n\nThe MySQL configuration file that you should edit is at \n/etc/mysql/mysql.conf.d/mysql.cnf\n.\n\n\nGitea\n\n\ngitea locations\n\n\nGitea was installed using \ngo get\n, which integrates Go with Github. The command checked out a copy of the code in the directory specified by \n$GOCODE\n, which is at \n~/gocode\n.\n\n\nThe gitea source is located in \n/home/melo/gocode/src/code.gitea.io/gitea/\n, which is symlinked to \n~melo/gitea/\n.\n\n\nrunning gitea\n\n\nGitea will \nnot\n run on boot - a startup service needs to be added in \n/etc/init.d/gitea\n that will run the gitea command as user \nmelo\n.\n\n\nThe Gitea web server is a binary Go program that bundles together everything it needs to run. The binary is built and run in the directory \n~melo/gocode/src/code.gitea.io/gitea\n (both as the user \nmelo\n). \n\n\nTo run the binary, you would execute it with the \"web\" argument:\n\n\n$ cd ~/gocode/src/code.gitea.io/gitea/\n$ ./gitea web\n\n\n\n\nHowever, this starts the process in the foreground, so it's more convenient to run it in a screen (which allows you to detach from a shell, end your session, and reattach to that shell in a later session).\n\n\n$ screen -d -m -S giteaweb $HOME/gocode/src/code.gitea.io/gitea/gitea web\n\n\n\n\nThis will start a new screen in detached mode (\n-d -m\n), call it \ngiteaweb\n (\n-S\n), and run the command \ngitea web\n.\n\n\nTo reattach, list your screens using the \n-ls\n flag and reattach using the \n-r\n flag:\n\n\n$ screen -ls\n$ screen -r giteaweb\n\n\n\n\nrebuilding gitea\n\n\nThe gitea source directory at \n~/gocode/src/code.gitea.io/gitea\n is a cloned git repository, so you can check out different versions or branches as needed. If you make changes to the configuration file or template files, you will also need to re-make the gitea binary (since all of that is bundled up in the binary).\n\n\nTo remake the binary:\n\n\n$ cd $GOCODE/src/code.gitea.io/gitea/\n\n# here you can do stuff like\n# git branch -a\n# git checkout v1.3\n\n$ TAGS=\"bindata\" make generate build",
+            "title": "Wisko FAQ"
+        },
+        {
+            "location": "/faq/#wisko-faq",
+            "text": "",
+            "title": "wisko FAQ"
+        },
+        {
+            "location": "/faq/#apache",
+            "text": "Link:  Apache on the Ubuntu Wiki  Apache 2 was installed using the command  apt-get install apache2 .",
+            "title": "Apache"
+        },
+        {
+            "location": "/faq/#running-apache2",
+            "text": "To start, restart, or stop apache2 (it should start automatically on boot):  $ sudo service apache2 start\n$ sudo service apache2 restart\n$ sudo service apache2 stop",
+            "title": "running apache2"
+        },
+        {
+            "location": "/faq/#apache2-configuration-files",
+            "text": "Apache keeps its configuration files in  /etc/apache2/ .  Apache is configured to host multiple websites, so there are multiple configuration files.   The global Apache config file is  /etc/apache2/apache2.conf .  Site-specific Apache config files are in  /etc/apache2/sites-available . To make a new site, just add a new file to that folder (name it whatever you'd like). There is an existing default configuration in that folder.  The site configuration file is where you edit the folder it serves up, the port it listens on, what requests it is listening for (subdomain or full domain), etc.  When you have edited a site's configuration file, enable it using the  a2ensite  command:  $ a2ensite name_of_site  Likewise, disable the site with  a2dissite :  $ a2dissite name_of_site",
+            "title": "apache2 configuration files"
+        },
+        {
+            "location": "/faq/#php",
+            "text": "Link:  LAMP Server on Ubuntu Wiki  PHP was installed using aptitude.",
+            "title": "PHP"
+        },
+        {
+            "location": "/faq/#running-php",
+            "text": "PHP is a programming language designed for web browsers, so you don't need to start it - Apache will handle that. (Apache has a PHP module that has been enabled.)",
+            "title": "running php"
+        },
+        {
+            "location": "/faq/#php-configuration-files",
+            "text": "PHP also has multiple configuration files, but we're only interested in the Apache-PHP configuration file at  /etc/php5/apache2/php.ini . The main thing that you would change here is the max file upload size (10 MB by default) and whether PHP prints out errors (\"debug\" mode).",
+            "title": "php configuration files"
+        },
+        {
+            "location": "/faq/#mysql",
+            "text": "Link:  MySQL on Ubuntu Wiki  MySQL server was installed using aptitude.",
+            "title": "MySQL"
+        },
+        {
+            "location": "/faq/#networking",
+            "text": "MySQL will listen on port 3306 for incoming requests on the local machine  only  (it is bound to the address 127.0.0.1:3306). That means no outside computers can communicate with MySQL. This can be changed in the configuration file.",
+            "title": "networking"
+        },
+        {
+            "location": "/faq/#running-mysql",
+            "text": "To run the MySQL server in the background (it should start automatically on boot), run:  $ sudo service mysql start  To get a MySQL shell, run MySQL from the command line:  $ mysql -u root -p  This will prompt you for your MySQL password.  To make a new MySQL user, log in as the root user and run:  mysql> CREATE USER 'newuser'@'localhost' IDENTIFIED BY \"newpassword\";  To create a database and give the new user permission to edit that database:  mysql> CREATE DATABASE newdb;\nmysql> GRANT ALL PRIVILEGES ON newdb.* TO \"newuser\"@\"localhost\";  MySQL is picky about quotations.",
+            "title": "running mysql"
+        },
+        {
+            "location": "/faq/#mysql-configuration-files",
+            "text": "The main MySQL configuration file is in  /etc/mysql/mysql.cnf .  The MySQL configuration file that you should edit is at  /etc/mysql/mysql.conf.d/mysql.cnf .",
+            "title": "mysql configuration files"
+        },
+        {
+            "location": "/faq/#gitea",
+            "text": "",
+            "title": "Gitea"
+        },
+        {
+            "location": "/faq/#gitea-locations",
+            "text": "Gitea was installed using  go get , which integrates Go with Github. The command checked out a copy of the code in the directory specified by  $GOCODE , which is at  ~/gocode .  The gitea source is located in  /home/melo/gocode/src/code.gitea.io/gitea/ , which is symlinked to  ~melo/gitea/ .",
+            "title": "gitea locations"
+        },
+        {
+            "location": "/faq/#running-gitea",
+            "text": "Gitea will  not  run on boot - a startup service needs to be added in  /etc/init.d/gitea  that will run the gitea command as user  melo .  The Gitea web server is a binary Go program that bundles together everything it needs to run. The binary is built and run in the directory  ~melo/gocode/src/code.gitea.io/gitea  (both as the user  melo ).   To run the binary, you would execute it with the \"web\" argument:  $ cd ~/gocode/src/code.gitea.io/gitea/\n$ ./gitea web  However, this starts the process in the foreground, so it's more convenient to run it in a screen (which allows you to detach from a shell, end your session, and reattach to that shell in a later session).  $ screen -d -m -S giteaweb $HOME/gocode/src/code.gitea.io/gitea/gitea web  This will start a new screen in detached mode ( -d -m ), call it  giteaweb  ( -S ), and run the command  gitea web .  To reattach, list your screens using the  -ls  flag and reattach using the  -r  flag:  $ screen -ls\n$ screen -r giteaweb",
+            "title": "running gitea"
+        },
+        {
+            "location": "/faq/#rebuilding-gitea",
+            "text": "The gitea source directory at  ~/gocode/src/code.gitea.io/gitea  is a cloned git repository, so you can check out different versions or branches as needed. If you make changes to the configuration file or template files, you will also need to re-make the gitea binary (since all of that is bundled up in the binary).  To remake the binary:  $ cd $GOCODE/src/code.gitea.io/gitea/\n\n# here you can do stuff like\n# git branch -a\n# git checkout v1.3\n\n$ TAGS=\"bindata\" make generate build",
+            "title": "rebuilding gitea"
+        },
+        {
+            "location": "/locked-out/",
+            "text": "locked out of wisko\n\n\nno problem, i got this.\n\n\n$ ssh melo@159.65.75.41\n\nECDSA key fingerprint is ...\n\nAre you sure you want to continue connecting (yes/no)? yes\n\nWarning: Permanently added '159.65.75.41' (ECDSA) to the list of known hosts.\n\nmelo@159.65.75.41: Permission denied (publickey).\n\n\n\n\n\noh, so i have to generate a new key pair. lemme google that.\n\n\ncreating a new public key\n\n\nhelp from do\n\n\nssh-keygen -t rsa\nEnter file in which to save the key (/Users/melo/.ssh/id_rsa):\n\n\n\n\n\nhit enter to store in user ssh root folder\n\n\nEnter passphrase (empty for no passphrase):\nEnter same passphrase again\n\n\n\n\n\nhit enter to store without passphrase\n\n\ncopy key to do account\n\n\nrun from the command line:\n\n\ncat ~/.ssh/id_rsa.pub\n\n\n\n\n\nopen settings > security in do, selection to add new key\npaste in the above key and name it accordingly\n\n\nlogin/ add my key to the server\n\n\n(\nWARNING:\n possibly bad to run these commands.)\n\n\ncat ~/.ssh/id_rsa.pub | ssh melo@159.65.75.41 \"cat >> /home/melo/.ssh/authorized_keys\"\n\nmelo@159.65.75.41: Permission denied (publickey).\n\n\n\n\nno? \n\n\ncat ~/.ssh/id\\_rsa.pub | ssh root@159.65.75.41 \"cat >> ~/.ssh/authorized\\_keys\"\nroot@159.65.75.41: Permission denied (publickey).\n\n\n\n\n\noh yea, charles turned off root access via command line.\n\n\nssh debug mode w/ charles\n\n\nssh -vvv melo@159.65.75.41\n\n\nroot@159.65.75.41: Permission denied (publickey).\nMelo:~ melo$ ssh -vvv melo@159.65.75.41\nOpenSSH_7.6p1, LibreSSL 2.6.2\ndebug1: Reading configuration data /Users/melo/.ssh/config\ndebug1: Reading configuration data /etc/ssh/ssh_config\ndebug1: /etc/ssh/ssh_config line 48: Applying options for *\ndebug2: ssh_connect_direct: needpriv 0\ndebug1: Connecting to 159.65.75.41 port 22.\ndebug1: Connection established.\ndebug1: identity file /Users/melo/.ssh/id_rsa type 0\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_rsa-cert type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_dsa type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_dsa-cert type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_ecdsa type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_ecdsa-cert type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_ed25519 type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_ed25519-cert type -1\ndebug1: Local version string SSH-2.0-OpenSSH_7.6\ndebug1: Remote protocol version 2.0, remote software version OpenSSH_7.2p2 Ubuntu-4ubuntu2.4\ndebug1: match: OpenSSH_7.2p2 Ubuntu-4ubuntu2.4 pat OpenSSH* compat 0x04000000\ndebug3: fd 5 is O_NONBLOCK\ndebug1: Authenticating to 159.65.75.41:22 as 'melo'\ndebug3: hostkeys_foreach: reading file \"/Users/melo/.ssh/known_hosts\"\ndebug3: record_hostkey: found key type ECDSA in file /Users/melo/.ssh/known_hosts:20\ndebug3: load_hostkeys: loaded 1 keys from 159.65.75.41\ndebug3: order_hostkeyalgs: prefer hostkeyalgs: ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-cert-v01@openssh.com,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521\ndebug3: send packet: type 20\ndebug1: SSH2_MSG_KEXINIT sent\ndebug3: receive packet: type 20\ndebug1: SSH2_MSG_KEXINIT received\ndebug2: local client KEXINIT proposal\ndebug2: KEX algorithms: curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha1,diffie-hellman-group14-sha256,diffie-hellman-group14-sha1,ext-info-c\ndebug2: host key algorithms: ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-cert-v01@openssh.com,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,ssh-ed25519-cert-v01@openssh.com,ssh-rsa-cert-v01@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256,ssh-rsa\ndebug2: ciphers ctos: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com\ndebug2: ciphers stoc: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com\ndebug2: MACs ctos: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1\ndebug2: MACs stoc: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1\ndebug2: compression ctos: none,zlib@openssh.com,zlib\ndebug2: compression stoc: none,zlib@openssh.com,zlib\ndebug2: languages ctos: \ndebug2: languages stoc: \ndebug2: first_kex_follows 0 \ndebug2: reserved 0 \ndebug2: peer server KEXINIT proposal\ndebug2: KEX algorithms: curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha1\ndebug2: host key algorithms: ssh-rsa,rsa-sha2-512,rsa-sha2-256,ecdsa-sha2-nistp256,ssh-ed25519\ndebug2: ciphers ctos: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com\ndebug2: ciphers stoc: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com\ndebug2: MACs ctos: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1\ndebug2: MACs stoc: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1\ndebug2: compression ctos: none,zlib@openssh.com\ndebug2: compression stoc: none,zlib@openssh.com\ndebug2: languages ctos: \ndebug2: languages stoc: \ndebug2: first_kex_follows 0 \ndebug2: reserved 0 \ndebug1: kex: algorithm: curve25519-sha256@libssh.org\ndebug1: kex: host key algorithm: ecdsa-sha2-nistp256\ndebug1: kex: server->client cipher: chacha20-poly1305@openssh.com MAC: <implicit> compression: none\ndebug1: kex: client->server cipher: chacha20-poly1305@openssh.com MAC: <implicit> compression: none\ndebug3: send packet: type 30\ndebug1: expecting SSH2_MSG_KEX_ECDH_REPLY\ndebug3: receive packet: type 31\ndebug1: Server host key: ecdsa-sha2-nistp256 SHA256:y1jQr+0TsjhrdM3TGWSZ/BGNdzxrK7u+hUXS/TzS1ss\ndebug3: hostkeys_foreach: reading file \"/Users/melo/.ssh/known_hosts\"\ndebug3: record_hostkey: found key type ECDSA in file /Users/melo/.ssh/known_hosts:20\ndebug3: load_hostkeys: loaded 1 keys from 159.65.75.41\ndebug1: Host '159.65.75.41' is known and matches the ECDSA host key.\ndebug1: Found key in /Users/melo/.ssh/known_hosts:20\ndebug3: send packet: type 21\ndebug2: set_newkeys: mode 1\ndebug1: rekey after 134217728 blocks\ndebug1: SSH2_MSG_NEWKEYS sent\ndebug1: expecting SSH2_MSG_NEWKEYS\ndebug3: receive packet: type 21\ndebug1: SSH2_MSG_NEWKEYS received\ndebug2: set_newkeys: mode 0\ndebug1: rekey after 134217728 blocks\ndebug2: key: /Users/melo/.ssh/id_rsa (0x7f897241b200)\ndebug2: key: /Users/melo/.ssh/id_dsa (0x0)\ndebug2: key: /Users/melo/.ssh/id_ecdsa (0x0)\ndebug2: key: /Users/melo/.ssh/id_ed25519 (0x0)\ndebug3: send packet: type 5\ndebug3: receive packet: type 7\ndebug1: SSH2_MSG_EXT_INFO received\ndebug1: kex_input_ext_info: server-sig-algs=<rsa-sha2-256,rsa-sha2-512>\ndebug3: receive packet: type 6\ndebug2: service_accept: ssh-userauth\ndebug1: SSH2_MSG_SERVICE_ACCEPT received\ndebug3: send packet: type 50\ndebug3: receive packet: type 51\ndebug1: Authentications that can continue: publickey\ndebug3: start over, passed a different list publickey\ndebug3: preferred publickey,keyboard-interactive,password\ndebug3: authmethod_lookup publickey\ndebug3: remaining preferred: keyboard-interactive,password\ndebug3: authmethod_is_enabled publickey\ndebug1: Next authentication method: publickey\ndebug1: Offering public key: RSA SHA256:iIOTgB1gfdbEi11gdn426XlamlH53riKdLqImE22zi8 /Users/melo/.ssh/id_rsa\ndebug3: send_pubkey_test\ndebug3: send packet: type 50\ndebug2: we sent a publickey packet, wait for reply\ndebug3: receive packet: type 51\ndebug1: Authentications that can continue: publickey\ndebug1: Trying private key: /Users/melo/.ssh/id_dsa\ndebug3: no such identity: /Users/melo/.ssh/id_dsa: No such file or directory\ndebug1: Trying private key: /Users/melo/.ssh/id_ecdsa\ndebug3: no such identity: /Users/melo/.ssh/id_ecdsa: No such file or directory\ndebug1: Trying private key: /Users/melo/.ssh/id_ed25519\ndebug3: no such identity: /Users/melo/.ssh/id_ed25519: No such file or directory\ndebug2: we did not send a packet, disable method\ndebug1: No more authentication methods to try.\nmelo@159.65.75.41: Permission denied (publickey).\n\n\n\n\nError message is totally unhelpful. Googling turns up some problems with file permissions and with public key access being disabled in SSH config file.\n\n\nLogged in via DO, opened a console on the machine (Droplets > More > Access console), and found that the ssh folder was owned by root. Nobody can log in via ssh. Charles updated the permissions:\n\n\nsudo chown -R melo:melo ~/.ssh\nsudo chmod 700 ~/.ssh\nsudo chmod 600 ~/.ssh/*\n\n\n\n\nThis still didn't work.\n\n\nFinally, uninstalling/reinstalling openssh did the trick:\n\n\nsudo apt-get purge openssh-client openssh-server\nsudo apt-get install openssh-client openssh-server\n\n\n\n\nthen remove the \n.ssh\n folder in the root user's home directory. Regenerate the keys as the root user:\n\n\nssh-keygen\n\n\n\n\nNow the machine should be ready to run the reinstalled SSH server.\n\n\nTo enable passwordless access, assuming you are connecting from a local machine (Mac) to a remote machine (wisko):\n\n\nOn the Mac: generate your ssh key:\n\n\nssh-keygen\n\n\n\n\nprint your public key to the screen:\n\n\ncat ~/.ssh/id_rsa.pub\n\n\n\n\nCopy this key to the clipboard.\n\n\nOn the Mac, log in to wisko:\n\n\nssh melo@<wisko-ip>\n\n\n\n\nOnce you are logged in, edit the following file with your favorite text editor (e.g., nano):\n\n\nnano ~/.ssh/authorized_keys\n\n\n\n\nAdd the public key from your Mac as the last line of the file. Save it and close it.\n\n\nNow test out your passwordless access: SSH from the Mac to wisko. The changes should take effect immediately.\n\n\nLink to Uncle Chucky's Passwordless SSH Login Guide",
+            "title": "Locked Out of Wisko"
+        },
+        {
+            "location": "/locked-out/#locked-out-of-wisko",
+            "text": "no problem, i got this.  $ ssh melo@159.65.75.41\n\nECDSA key fingerprint is ...\n\nAre you sure you want to continue connecting (yes/no)? yes\n\nWarning: Permanently added '159.65.75.41' (ECDSA) to the list of known hosts.\n\nmelo@159.65.75.41: Permission denied (publickey).  oh, so i have to generate a new key pair. lemme google that.",
+            "title": "locked out of wisko"
+        },
+        {
+            "location": "/locked-out/#creating-a-new-public-key",
+            "text": "help from do  ssh-keygen -t rsa\nEnter file in which to save the key (/Users/melo/.ssh/id_rsa):  hit enter to store in user ssh root folder  Enter passphrase (empty for no passphrase):\nEnter same passphrase again  hit enter to store without passphrase",
+            "title": "creating a new public key"
+        },
+        {
+            "location": "/locked-out/#copy-key-to-do-account",
+            "text": "run from the command line:  cat ~/.ssh/id_rsa.pub  open settings > security in do, selection to add new key\npaste in the above key and name it accordingly",
+            "title": "copy key to do account"
+        },
+        {
+            "location": "/locked-out/#login-add-my-key-to-the-server",
+            "text": "( WARNING:  possibly bad to run these commands.)  cat ~/.ssh/id_rsa.pub | ssh melo@159.65.75.41 \"cat >> /home/melo/.ssh/authorized_keys\"\n\nmelo@159.65.75.41: Permission denied (publickey).  no?   cat ~/.ssh/id\\_rsa.pub | ssh root@159.65.75.41 \"cat >> ~/.ssh/authorized\\_keys\"\nroot@159.65.75.41: Permission denied (publickey).  oh yea, charles turned off root access via command line.",
+            "title": "login/ add my key to the server"
+        },
+        {
+            "location": "/locked-out/#ssh-debug-mode-w-charles",
+            "text": "ssh -vvv melo@159.65.75.41\n\n\nroot@159.65.75.41: Permission denied (publickey).\nMelo:~ melo$ ssh -vvv melo@159.65.75.41\nOpenSSH_7.6p1, LibreSSL 2.6.2\ndebug1: Reading configuration data /Users/melo/.ssh/config\ndebug1: Reading configuration data /etc/ssh/ssh_config\ndebug1: /etc/ssh/ssh_config line 48: Applying options for *\ndebug2: ssh_connect_direct: needpriv 0\ndebug1: Connecting to 159.65.75.41 port 22.\ndebug1: Connection established.\ndebug1: identity file /Users/melo/.ssh/id_rsa type 0\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_rsa-cert type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_dsa type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_dsa-cert type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_ecdsa type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_ecdsa-cert type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_ed25519 type -1\ndebug1: key_load_public: No such file or directory\ndebug1: identity file /Users/melo/.ssh/id_ed25519-cert type -1\ndebug1: Local version string SSH-2.0-OpenSSH_7.6\ndebug1: Remote protocol version 2.0, remote software version OpenSSH_7.2p2 Ubuntu-4ubuntu2.4\ndebug1: match: OpenSSH_7.2p2 Ubuntu-4ubuntu2.4 pat OpenSSH* compat 0x04000000\ndebug3: fd 5 is O_NONBLOCK\ndebug1: Authenticating to 159.65.75.41:22 as 'melo'\ndebug3: hostkeys_foreach: reading file \"/Users/melo/.ssh/known_hosts\"\ndebug3: record_hostkey: found key type ECDSA in file /Users/melo/.ssh/known_hosts:20\ndebug3: load_hostkeys: loaded 1 keys from 159.65.75.41\ndebug3: order_hostkeyalgs: prefer hostkeyalgs: ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-cert-v01@openssh.com,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521\ndebug3: send packet: type 20\ndebug1: SSH2_MSG_KEXINIT sent\ndebug3: receive packet: type 20\ndebug1: SSH2_MSG_KEXINIT received\ndebug2: local client KEXINIT proposal\ndebug2: KEX algorithms: curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha1,diffie-hellman-group14-sha256,diffie-hellman-group14-sha1,ext-info-c\ndebug2: host key algorithms: ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-cert-v01@openssh.com,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,ssh-ed25519-cert-v01@openssh.com,ssh-rsa-cert-v01@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256,ssh-rsa\ndebug2: ciphers ctos: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com\ndebug2: ciphers stoc: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com\ndebug2: MACs ctos: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1\ndebug2: MACs stoc: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1\ndebug2: compression ctos: none,zlib@openssh.com,zlib\ndebug2: compression stoc: none,zlib@openssh.com,zlib\ndebug2: languages ctos: \ndebug2: languages stoc: \ndebug2: first_kex_follows 0 \ndebug2: reserved 0 \ndebug2: peer server KEXINIT proposal\ndebug2: KEX algorithms: curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha1\ndebug2: host key algorithms: ssh-rsa,rsa-sha2-512,rsa-sha2-256,ecdsa-sha2-nistp256,ssh-ed25519\ndebug2: ciphers ctos: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com\ndebug2: ciphers stoc: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com\ndebug2: MACs ctos: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1\ndebug2: MACs stoc: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1\ndebug2: compression ctos: none,zlib@openssh.com\ndebug2: compression stoc: none,zlib@openssh.com\ndebug2: languages ctos: \ndebug2: languages stoc: \ndebug2: first_kex_follows 0 \ndebug2: reserved 0 \ndebug1: kex: algorithm: curve25519-sha256@libssh.org\ndebug1: kex: host key algorithm: ecdsa-sha2-nistp256\ndebug1: kex: server->client cipher: chacha20-poly1305@openssh.com MAC: <implicit> compression: none\ndebug1: kex: client->server cipher: chacha20-poly1305@openssh.com MAC: <implicit> compression: none\ndebug3: send packet: type 30\ndebug1: expecting SSH2_MSG_KEX_ECDH_REPLY\ndebug3: receive packet: type 31\ndebug1: Server host key: ecdsa-sha2-nistp256 SHA256:y1jQr+0TsjhrdM3TGWSZ/BGNdzxrK7u+hUXS/TzS1ss\ndebug3: hostkeys_foreach: reading file \"/Users/melo/.ssh/known_hosts\"\ndebug3: record_hostkey: found key type ECDSA in file /Users/melo/.ssh/known_hosts:20\ndebug3: load_hostkeys: loaded 1 keys from 159.65.75.41\ndebug1: Host '159.65.75.41' is known and matches the ECDSA host key.\ndebug1: Found key in /Users/melo/.ssh/known_hosts:20\ndebug3: send packet: type 21\ndebug2: set_newkeys: mode 1\ndebug1: rekey after 134217728 blocks\ndebug1: SSH2_MSG_NEWKEYS sent\ndebug1: expecting SSH2_MSG_NEWKEYS\ndebug3: receive packet: type 21\ndebug1: SSH2_MSG_NEWKEYS received\ndebug2: set_newkeys: mode 0\ndebug1: rekey after 134217728 blocks\ndebug2: key: /Users/melo/.ssh/id_rsa (0x7f897241b200)\ndebug2: key: /Users/melo/.ssh/id_dsa (0x0)\ndebug2: key: /Users/melo/.ssh/id_ecdsa (0x0)\ndebug2: key: /Users/melo/.ssh/id_ed25519 (0x0)\ndebug3: send packet: type 5\ndebug3: receive packet: type 7\ndebug1: SSH2_MSG_EXT_INFO received\ndebug1: kex_input_ext_info: server-sig-algs=<rsa-sha2-256,rsa-sha2-512>\ndebug3: receive packet: type 6\ndebug2: service_accept: ssh-userauth\ndebug1: SSH2_MSG_SERVICE_ACCEPT received\ndebug3: send packet: type 50\ndebug3: receive packet: type 51\ndebug1: Authentications that can continue: publickey\ndebug3: start over, passed a different list publickey\ndebug3: preferred publickey,keyboard-interactive,password\ndebug3: authmethod_lookup publickey\ndebug3: remaining preferred: keyboard-interactive,password\ndebug3: authmethod_is_enabled publickey\ndebug1: Next authentication method: publickey\ndebug1: Offering public key: RSA SHA256:iIOTgB1gfdbEi11gdn426XlamlH53riKdLqImE22zi8 /Users/melo/.ssh/id_rsa\ndebug3: send_pubkey_test\ndebug3: send packet: type 50\ndebug2: we sent a publickey packet, wait for reply\ndebug3: receive packet: type 51\ndebug1: Authentications that can continue: publickey\ndebug1: Trying private key: /Users/melo/.ssh/id_dsa\ndebug3: no such identity: /Users/melo/.ssh/id_dsa: No such file or directory\ndebug1: Trying private key: /Users/melo/.ssh/id_ecdsa\ndebug3: no such identity: /Users/melo/.ssh/id_ecdsa: No such file or directory\ndebug1: Trying private key: /Users/melo/.ssh/id_ed25519\ndebug3: no such identity: /Users/melo/.ssh/id_ed25519: No such file or directory\ndebug2: we did not send a packet, disable method\ndebug1: No more authentication methods to try.\nmelo@159.65.75.41: Permission denied (publickey).  Error message is totally unhelpful. Googling turns up some problems with file permissions and with public key access being disabled in SSH config file.  Logged in via DO, opened a console on the machine (Droplets > More > Access console), and found that the ssh folder was owned by root. Nobody can log in via ssh. Charles updated the permissions:  sudo chown -R melo:melo ~/.ssh\nsudo chmod 700 ~/.ssh\nsudo chmod 600 ~/.ssh/*  This still didn't work.  Finally, uninstalling/reinstalling openssh did the trick:  sudo apt-get purge openssh-client openssh-server\nsudo apt-get install openssh-client openssh-server  then remove the  .ssh  folder in the root user's home directory. Regenerate the keys as the root user:  ssh-keygen  Now the machine should be ready to run the reinstalled SSH server.  To enable passwordless access, assuming you are connecting from a local machine (Mac) to a remote machine (wisko):  On the Mac: generate your ssh key:  ssh-keygen  print your public key to the screen:  cat ~/.ssh/id_rsa.pub  Copy this key to the clipboard.  On the Mac, log in to wisko:  ssh melo@<wisko-ip>  Once you are logged in, edit the following file with your favorite text editor (e.g., nano):  nano ~/.ssh/authorized_keys  Add the public key from your Mac as the last line of the file. Save it and close it.  Now test out your passwordless access: SSH from the Mac to wisko. The changes should take effect immediately.  Link to Uncle Chucky's Passwordless SSH Login Guide",
+            "title": "ssh debug mode w/ charles"
+        },
+        {
+            "location": "/smallmelo-migration-1/",
+            "text": "smallmelo.com migration part 1\n\n\ncopy public ssh key to wisko\n\n\nget public ssh key from local machine\n\n\ncat ~/.ssh/id_rsa.pub\n\n\n\n\ncopy that log into wisko in seperate termibal window\n\n\nnano .ssh/authorized_keys\n\n\n\n\npaste in then exit\n\n\nchanging the folder structure of my wordpress site\n\n\nused \nthis site\n to setup the folders the way i wanted them. \n\n\nlots of nano-ing and reviewing later, ready to start making changes.\n\n\ncd /var/www\n\n\n\n\nmake directory\n\n\nsudo mkdir -p /var/www/allthehatsformaps.com/public_html\n\n\n\n\ngrant myself permission to access\n\n\nsudo chown -R $USER:$USER /var/www/allthehatsformaps.com/public_html\n\n\n\n\n\ncreate example page\n\n\nnano /var/www/allthehatsformaps.com/public_html/index.html\n\n\n\n\n\nugh, do some renaming\n\n\nsudo mv allthehatsformaps.com allthehatsformaps\nsudo chown -R $USER:$USER /var/www/allthehatsformaps/public_html\n\n\n\n\n\nadd my html content accordingly, then make a copy of the conf file\n\n\nsudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/allthehatsformaps.conf\n\nnano allthehatsformaps.conf\n\n\n\n\n\ngrant permissions\n\n\nsudo chown -R $USER:$USER /etc/apache2/sites-available/allthehatsformaps.conf\n\n\n\n\n\nedited my new config file\n\n\nServerName allthehatsformaps.com\nServerAlias www.allthehatsformaps.com\nServerAdmin melo@allthehatsformaps.com\nDocumentRoot /var/www/allthehatsformaps/public_html\n\n\n\n\n\ndisable charles' site & enable my new one\n\n\nsudo a2dissite 000-default.conf\nsudo a2ensite allthehatsformaps.conf\nservice apache2 reload\n\n\n\n\n\ncopy wordpress folder from htdocs to my new folder \n\n\nsudo mv /var/www/htdocs/wordpress /var/www/allthehatsformaps/public_html\n\n\n\n\n\noops... that moved the entire folder, i just wanted to move its contents. \n\n\ncd /var/www/allthehatsformaps/public_html\nsudo mv wordpress/* .\nrmdir wordpress\nrm index.html\n\n\n\n\ngoing to allthehatsformaps.com works\n\n\ngoing to allthehatsformaps.com/wp-admin tries to redirect to http://159.65.75.41/wordpress/wp-login.php?redirect_to=http%3A%2F%2Fallthehatsformaps.com%2Fwp-admin%2F&reauth=1 and throws a 404 error\n\n\nwent instead to:\nhttp://159.65.75.41/wp-login.php\n\n\ncopy back the wordpress folder into htdocs\n\n\nsudo cp /var/www/allthehatsformaps/public_html/* /var/www/htdocs/wordpress\n\n\n\n\ndisable my site config and enable old one\n\n\nsudo a2dissite allthehatsformaps.conf\nsudo a2ensite 000-default.conf\nservice apache2 reload\n\n\n\n\nwent to the wordpress login and signed in\nunder settings removed \"wordpress\" subfolder from the site url\n\n\ndisable charles' site & enable my new one\n\n\nsudo a2dissite 000-default.conf\nsudo a2ensite allthehatsformaps.conf\nservice apache2 reload\n\n\n\n\n\nlogged back into wordpress and changed the url to: http://allthehatsformaps.com\n\n\nremoved the old wordpress folder in htdocs:\n\n\nsudo rm -r wordpress\n\n\n\n\n\ncd back into the new wordpress and added a .htaccess file with the following:\n\n\n<IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteBase /\nRewriteRule ^index\\.php$ - [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . /index.php [L]\n</IfModule>\n\n\n\n\n\nthen gave wordpress permission to edit it, according \nto this site",
+            "title": "smallmelo.com Migration: Part 1"
+        },
+        {
+            "location": "/smallmelo-migration-1/#smallmelocom-migration-part-1",
+            "text": "",
+            "title": "smallmelo.com migration part 1"
+        },
+        {
+            "location": "/smallmelo-migration-1/#copy-public-ssh-key-to-wisko",
+            "text": "get public ssh key from local machine  cat ~/.ssh/id_rsa.pub  copy that log into wisko in seperate termibal window  nano .ssh/authorized_keys  paste in then exit",
+            "title": "copy public ssh key to wisko"
+        },
+        {
+            "location": "/smallmelo-migration-1/#changing-the-folder-structure-of-my-wordpress-site",
+            "text": "used  this site  to setup the folders the way i wanted them.   lots of nano-ing and reviewing later, ready to start making changes.  cd /var/www  make directory  sudo mkdir -p /var/www/allthehatsformaps.com/public_html  grant myself permission to access  sudo chown -R $USER:$USER /var/www/allthehatsformaps.com/public_html  create example page  nano /var/www/allthehatsformaps.com/public_html/index.html  ugh, do some renaming  sudo mv allthehatsformaps.com allthehatsformaps\nsudo chown -R $USER:$USER /var/www/allthehatsformaps/public_html  add my html content accordingly, then make a copy of the conf file  sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/allthehatsformaps.conf\n\nnano allthehatsformaps.conf  grant permissions  sudo chown -R $USER:$USER /etc/apache2/sites-available/allthehatsformaps.conf  edited my new config file  ServerName allthehatsformaps.com\nServerAlias www.allthehatsformaps.com\nServerAdmin melo@allthehatsformaps.com\nDocumentRoot /var/www/allthehatsformaps/public_html  disable charles' site & enable my new one  sudo a2dissite 000-default.conf\nsudo a2ensite allthehatsformaps.conf\nservice apache2 reload  copy wordpress folder from htdocs to my new folder   sudo mv /var/www/htdocs/wordpress /var/www/allthehatsformaps/public_html  oops... that moved the entire folder, i just wanted to move its contents.   cd /var/www/allthehatsformaps/public_html\nsudo mv wordpress/* .\nrmdir wordpress\nrm index.html  going to allthehatsformaps.com works  going to allthehatsformaps.com/wp-admin tries to redirect to http://159.65.75.41/wordpress/wp-login.php?redirect_to=http%3A%2F%2Fallthehatsformaps.com%2Fwp-admin%2F&reauth=1 and throws a 404 error  went instead to:\nhttp://159.65.75.41/wp-login.php  copy back the wordpress folder into htdocs  sudo cp /var/www/allthehatsformaps/public_html/* /var/www/htdocs/wordpress  disable my site config and enable old one  sudo a2dissite allthehatsformaps.conf\nsudo a2ensite 000-default.conf\nservice apache2 reload  went to the wordpress login and signed in\nunder settings removed \"wordpress\" subfolder from the site url  disable charles' site & enable my new one  sudo a2dissite 000-default.conf\nsudo a2ensite allthehatsformaps.conf\nservice apache2 reload  logged back into wordpress and changed the url to: http://allthehatsformaps.com  removed the old wordpress folder in htdocs:  sudo rm -r wordpress  cd back into the new wordpress and added a .htaccess file with the following:  <IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteBase /\nRewriteRule ^index\\.php$ - [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . /index.php [L]\n</IfModule>  then gave wordpress permission to edit it, according  to this site",
+            "title": "changing the folder structure of my wordpress site"
+        },
+        {
+            "location": "/smallmelo-migration-2/",
+            "text": "smallmelo.com migration part 2 (all the things)\n\n\ngrant melo permission to create files and upload via sftp using filezilla\n\n\nused \nthese\n instructions\n\n\ncopied html/php files into var/www/smallmelo\n\n\nusing filazilla\n\n\nadd the dns records to dreamhost to point to the server\n\n\n159.65.75.41 (a)\nwww smallmelo.com (cname)\n\n\ncreate new conf file for smallmelo\n\n\nsudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/smallmelo.conf\n\n\n\n\nedit the conf file to point to smallmelo.com\n\n\nenable the site\n\n\nsudo a2ensite smallmelo.conf\nservice apache2 reload\n\n\n\n\nmake a backup copy all files from smallmelo.com\n\n\nmade a basic index.html file\n\n\nturn off hosting by dreamhost\n\n\nrestart apache2\n\n\nsudo service apache2 restart",
+            "title": "smallmelo.com Migration: Part 2"
+        },
+        {
+            "location": "/smallmelo-migration-2/#smallmelocom-migration-part-2-all-the-things",
+            "text": "",
+            "title": "smallmelo.com migration part 2 (all the things)"
+        },
+        {
+            "location": "/smallmelo-migration-2/#grant-melo-permission-to-create-files-and-upload-via-sftp-using-filezilla",
+            "text": "used  these  instructions",
+            "title": "grant melo permission to create files and upload via sftp using filezilla"
+        },
+        {
+            "location": "/smallmelo-migration-2/#copied-htmlphp-files-into-varwwwsmallmelo",
+            "text": "using filazilla",
+            "title": "copied html/php files into var/www/smallmelo"
+        },
+        {
+            "location": "/smallmelo-migration-2/#add-the-dns-records-to-dreamhost-to-point-to-the-server",
+            "text": "159.65.75.41 (a)\nwww smallmelo.com (cname)",
+            "title": "add the dns records to dreamhost to point to the server"
+        },
+        {
+            "location": "/smallmelo-migration-2/#create-new-conf-file-for-smallmelo",
+            "text": "sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/smallmelo.conf",
+            "title": "create new conf file for smallmelo"
+        },
+        {
+            "location": "/smallmelo-migration-2/#edit-the-conf-file-to-point-to-smallmelocom",
+            "text": "",
+            "title": "edit the conf file to point to smallmelo.com"
+        },
+        {
+            "location": "/smallmelo-migration-2/#enable-the-site",
+            "text": "sudo a2ensite smallmelo.conf\nservice apache2 reload",
+            "title": "enable the site"
+        },
+        {
+            "location": "/smallmelo-migration-2/#make-a-backup-copy-all-files-from-smallmelocom",
+            "text": "",
+            "title": "make a backup copy all files from smallmelo.com"
+        },
+        {
+            "location": "/smallmelo-migration-2/#made-a-basic-indexhtml-file",
+            "text": "",
+            "title": "made a basic index.html file"
+        },
+        {
+            "location": "/smallmelo-migration-2/#turn-off-hosting-by-dreamhost",
+            "text": "",
+            "title": "turn off hosting by dreamhost"
+        },
+        {
+            "location": "/smallmelo-migration-2/#restart-apache2",
+            "text": "sudo service apache2 restart",
+            "title": "restart apache2"
+        },
+        {
+            "location": "/smallmelo-migration-3/",
+            "text": "smallmelo.com migration part 3 (allthehatsformaps to smallmelo)\n\n\nremove placeholder file\n\n\nsudo rm index.html\n\n\n\n\ncopy the files to smallmelo\n\n\nsudo cp -a /var/www/allthehatsformaps/public_html/* /var/www/smallmelo/public_html\n\n\n\n\nupdate the site in wordpress\n\n\nlogged back into wordpress and changed the url to: \nhttp://smallmelo.com\n\n\ncopy the relevent stuff over to the smallmelo.conf\n\n\n<Directory /var/www/smallmelo/public_html/>\n\n  DirectoryIndex index.php\n\n  AllowOverride All\n\n  Order allow,deny\n\n  Allow from all\n\n  </Directory>\n\n\n\n\n\ndisable and enable sites\n\n\nsudo a2dissite allthehatsformaps.conf\nsudo a2ensite smallmelo.conf\nsudo /etc/init.d/apache2 restart\n\n\n\n\n\ngive permissions\n\n\nsudo chown -v :www-data /var/www/smallmelo/public_html/.htaccess\n\nsudo chmod -v 664 \"/var/www/smallmelo/public_html/.htaccess\"\n\n\n\n\n\n\nreboot\n\n\nsudo /etc/init.d/apache2 restart\n\n\n\n\n\ndisabled, reenabled, reload\n\n\nsudo a2dissite smallmelo.conf\nsudo a2ensite smallmelo.conf\nsudo /etc/init.d/apache2 restart\nservice apache2 reload\n\n\n\n\n\ndisabling allthehats\n\n\nsudo rm allthehatsformaps.conf\nservice apache2 reload\n\n\n\n\nin the /var/wwww\n\n\nsudo rm -r allthehatsformaps\n\n\n\n\n\nin dreamhost\n\n\nremove wisko DNS records\nsetup redirect",
+            "title": "smallmelo.com Migration: Part 3"
+        },
+        {
+            "location": "/smallmelo-migration-3/#smallmelocom-migration-part-3-allthehatsformaps-to-smallmelo",
+            "text": "",
+            "title": "smallmelo.com migration part 3 (allthehatsformaps to smallmelo)"
+        },
+        {
+            "location": "/smallmelo-migration-3/#remove-placeholder-file",
+            "text": "sudo rm index.html",
+            "title": "remove placeholder file"
+        },
+        {
+            "location": "/smallmelo-migration-3/#copy-the-files-to-smallmelo",
+            "text": "sudo cp -a /var/www/allthehatsformaps/public_html/* /var/www/smallmelo/public_html",
+            "title": "copy the files to smallmelo"
+        },
+        {
+            "location": "/smallmelo-migration-3/#update-the-site-in-wordpress",
+            "text": "logged back into wordpress and changed the url to:  http://smallmelo.com",
+            "title": "update the site in wordpress"
+        },
+        {
+            "location": "/smallmelo-migration-3/#copy-the-relevent-stuff-over-to-the-smallmeloconf",
+            "text": "<Directory /var/www/smallmelo/public_html/>\n\n  DirectoryIndex index.php\n\n  AllowOverride All\n\n  Order allow,deny\n\n  Allow from all\n\n  </Directory>",
+            "title": "copy the relevent stuff over to the smallmelo.conf"
+        },
+        {
+            "location": "/smallmelo-migration-3/#disable-and-enable-sites",
+            "text": "sudo a2dissite allthehatsformaps.conf\nsudo a2ensite smallmelo.conf\nsudo /etc/init.d/apache2 restart",
+            "title": "disable and enable sites"
+        },
+        {
+            "location": "/smallmelo-migration-3/#give-permissions",
+            "text": "sudo chown -v :www-data /var/www/smallmelo/public_html/.htaccess\n\nsudo chmod -v 664 \"/var/www/smallmelo/public_html/.htaccess\"",
+            "title": "give permissions"
+        },
+        {
+            "location": "/smallmelo-migration-3/#reboot",
+            "text": "sudo /etc/init.d/apache2 restart",
+            "title": "reboot"
+        },
+        {
+            "location": "/smallmelo-migration-3/#disabled-reenabled-reload",
+            "text": "sudo a2dissite smallmelo.conf\nsudo a2ensite smallmelo.conf\nsudo /etc/init.d/apache2 restart\nservice apache2 reload",
+            "title": "disabled, reenabled, reload"
+        },
+        {
+            "location": "/smallmelo-migration-3/#disabling-allthehats",
+            "text": "sudo rm allthehatsformaps.conf\nservice apache2 reload",
+            "title": "disabling allthehats"
+        },
+        {
+            "location": "/smallmelo-migration-3/#in-the-varwwww",
+            "text": "sudo rm -r allthehatsformaps",
+            "title": "in the /var/wwww"
+        },
+        {
+            "location": "/smallmelo-migration-3/#in-dreamhost",
+            "text": "remove wisko DNS records\nsetup redirect",
+            "title": "in dreamhost"
+        },
+        {
+            "location": "/wisko-gitea/",
+            "text": "wisko gitea\n\n\nbefore you begin: gitea setup info\n\n\n(see \nwisko setup\n for details on how gitea was set up).\n\n\nwhere is gitea\n\n\nThe wisko gitea instance is installed to \n$GOPATH/src/code.gitea.io/gitea\n and there is a symlink to this directory at \n~/gitea\n.\n\n\nThis directory is actually a cloned git repo, so you can see what files you've modified from the default by running a \ngit status\n.\n\n\nThe binary is in that folder, at \nbin/gitea\n.\n\n\nwhere is go\n\n\nGo is installed using \ngoenv\n, so the global version of go that goenv will set can be printed using:\n\n\ngoenv global\n\n\n\n\nYou can verify you have the goenv go installed by running:\n\n\nwhich go\n\n\n\n\nwhich should return \n~/.goenv/shims/go\n, and \n\n\ngo version\n\n\n\n\nwhich should return 1.7.5.\n\n\ntask summary\n\n\nMaking gitea available via the subdomain \ngit.smallmelo.com\n requires setting up a couple of components:\n\n subdomain\n\n web server to handle redirects\n\n gitea configuration to tell gitea where it is hosted\n\n https certificates valid for the subdomain\n\n\nset up git subdomain\n\n\nFirst thing is, we need to set up the subdomain \ngit.smallmelo.com\n to redirect to the server. This depends on the hosting provider, but should be an A Name Record:\n\n\nA Record\n:\n\n\n\n\nRecord: git\n\n\nValue: \n\n\n\n\napache web server settings\n\n\nSetting up a name record for the subdomain will result in requests for \"git.smallmelo.com\" and \"smallmelo.com\" to both go to your server. The server will be able to see what domain/subdomain was requested in each request, so we need to set up rules to handle the subdomain correctly.\n\n\nIf the git subdomain is not set up with the DNS provider yet, you can still test it locally. From whatever machine you're connecting to wisk as, add an entry to \n/etc/hosts\n that will map the subdomain to wisko's IP:\n\n\nvim /etc/hosts\n\n\n\n\nand add\n\n\n159.65.75.41 git.smallmelo.com\n\n\n\n\n(Do this on your machine, not on wisko.)\n\n\napache configuration: http\n\n\nNow we'll set up the Apache web server to redirect any http requests to \ngit.smallmelo.com\n on port 80 on to gitea at port 3000.\n\n\nCreate a new apache config for this site at \n/etc/apache2/sites-available/git-smallmelo.conf\n that will contain all our settings. Set up a listener on port 80, all interfaces, that looks for requests to \ngit.smallmelo.com\n:\n\n\n/etc/apache2/sites-available/git-smallmelo.conf\n:\n\n\n<VirtualHost *:80>\n    ServerName git.smallmelo.com\n    ServerAdmin melo@smallmelo.com\n\n    # -------------------------\n    # Need to enable the following mods:\n    # a2enmod proxy\n    # a2enmod proxy_http\n\n    # Preserve original request (git.smallmelo.com)\n    ProxyPreserveHost On\n\n    # Set up proxy\n    <Proxy *>\n        Order allow,deny\n        Allow from all\n    </Proxy>\n    ProxyPass / http://localhost:3000/\n    ProxyPassReverse / http://localhost:3000/\n\n    # -------------------------\n\n    ErrorLog ${APACHE_LOG_DIR}/git-smallmelo-error.log\n    CustomLog ${APACHE_LOG_DIR}/git-smallmelo-access.log combined\n\n    # Note that we don't set a document root\n    # or permissions for a web directory\n    # because we're just forwarding traffic\n    # to gitea, which runs an entirely separate\n    # web server.\n\n</VirtualHost>\n\n\n\n\napache configuration: https\n\n\nWe also need to set up Apache to redirect https requests to \ngit.smallmelo.com\n on port 443 to gitea at port 3000.\n\n\nThis will require an HTTPS certificate for \ngit.smallmelo.com\n, so fire up lets encrypt.\n\n\nmaking apache certificate\n\n\nCreate an https apache config for this site at \n/etc/apache2/sites-available/git-smallmelo-le-ssl.conf\n that will contain all our settings. Set up a listener on port 443, all interfaces, that looks for requests to \ngit.smallmelo.com\n.\n\n\nRun the certbot:\n\n\n$ sudo certbot certonly --non-interactive --agree-tos --email \"melo@smallmelo.com\" --apache -d \"git.smallmelo.com\"\n\n\n\n\nThis will take a minute, but should conclude with:\n\n\nIMPORTANT NOTES:\n - Congratulations! Your certificate and chain have been saved at:\n   /etc/letsencrypt/live/git.smallmelo.com/fullchain.pem\n   Your key file has been saved at:\n   /etc/letsencrypt/live/git.smallmelo.com/privkey.pem\n   Your cert will expire on 2018-06-24. To obtain a new or tweaked\n   version of this certificate in the future, simply run certbot\n   again. To non-interactively renew *all* of your certificates, run\n   \"certbot renew\"\n - If you like Certbot, please consider supporting our work by:\n\n   Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n   Donating to EFF:                    https://eff.org/donate-le\n\n\n\n\napache configuration: https (revisited)\n\n\nNote that once the HTTPS request hits the server, the proxy does not need to happen over HTTPS since it happens within a single machine.\n\n\n/etc/apache2/sites-available/git-smallmelo-le-ssl.conf\n:\n\n\n<IfModule mod_ssl.c>\n    <VirtualHost *:443>\n        ServerName git.smallmelo.com\n        ServerAdmin melo@smallmelo.com\n\n        ErrorLog ${APACHE_LOG_DIR}/git-smallmelo-ssl-error.log\n        CustomLog ${APACHE_LOG_DIR}/git-smallmelo-ssl-access.log combined\n\n        # -------------------------\n        # Need to enable the following mods:\n\n        # a2enmod proxy\n        # a2enmod proxy_http\n\n        SSLEngine on\n        SSLProxyEngine On\n        Include /etc/letsencrypt/options-ssl-apache.conf\n        SSLCertificateFile /etc/letsencrypt/live/git.smallmelo.com/fullchain.pem\n        SSLCertificateKeyFile /etc/letsencrypt/live/git.smallmelo.com/privkey.pem\n\n        # Preserve original request (git.smallmelo.com)\n        ProxyPreserveHost On\n\n        # Set up proxy\n        <Proxy *>\n            Order allow,deny\n            Allow from all\n        </Proxy>\n        ProxyPass / http://localhost:3000/\n        ProxyPassReverse / http://localhost:3000/\n\n        # -------------------------\n\n    </VirtualHost>\n</IfModule>\n\n\n\n\nenable and activate\n\n\nNow enable the mods:\n\n\na2enmod proxy\na2enmod proxy_http\n\n\n\n\nNow enable the site:\n\n\na2ensite git-smallmelo\na2ensite git-smallmelo-le-ssl\n\n\n\n\nNow activate the site:\n\n\nservice apache2 reload\n\n\n\n\nOnce the A Name DNS record propagates, you can test out the Apache configuration.\n\n\nRun a dummy HTTP web server on port 3000:\n\n\ncat \"<h2>hello world</h2>\" > index.html\npython3 -m http.server 3000\n\n\n\n\nNow if you visit the subdomain:\n\n\nhttp://git.smallmelo.com\n\n\n\n\nyou should see a hit in the window running the HTTP server on port 3000.\n\n\ngitea configuration\n\n\ngitea version\n\n\nStart out by checking which version of gitea you have. We have checked out release \n1.2\n, which means that our git repo is in a \"headless\" state. Any changes that we make are going to go into a dead end.\n\n\nBut that's perfect - we can keep track of all our changes relative to version 1.2, and revert any changes we don't want anymore.\n\n\nMake the following changes to the default \napp.ini\n gitea config file:\n\n\nRUN_USER = melo\n\nDOMAIN = git.smallmelo.com\nROOT_URL = %(PROTOCOL)s://%(DOMAIN)s/\n\n\n\n\n(Note, you can use git diff to pick up the changes in the file.)\n\n\nKill any instances of gitea that are already running on port 3000, and start up the gitea server:\n\n\ncd ~/gitea\n./gitea web\n\n\n\n\n(or, do it in a screen, \nas mentioned in the wisko setup doc\n).\n\n\nhttps certs\n\n\nSee the above modifications to the document about certificates. A new SSL certificate for the git subdomain (\ngit.smallmelo.com\n) was needed, so we used certbot to make it.\n\n\nTo explain the HTTPS certificate setup for git.smallmelo.com a bit more:\n\n\n\n\nGitea runs its own web server, hosts its own files, and does not require an Apache server to run. We're just using Apache for convenience.\n\n\nJust as HTTP requests to smallmelo.com always go to port 80, where there is an Apache server listening, HTTPS requests to smallmelo.com always go to port 443, where there is also an Apache server listening\n\n\nHTTPS requests are handled by the Apache web server, so the certificates to create an encrypted session are handled by the Apache web server\n\n\nApache must have an SSL certifiate for \ngit.smallmelo.com\n to make the connection, or the browser will complain that the server is not configured correctly\n\n\nWhen we make a request for a gitea resource (say, \nhttps://git.smallmelo.com/melo/my-cool-project\n), the subdomain tells Apache where to forward the request (to gitea on port 3000), and the rest of the url (\n/melo/my-cool-project\n) is passed on to gitea, unmodified\n\n\nThe request from Apache to gitea happens on a single machine, so the connection does not need to be encrypted, hence Apache's proxy requests go to \nhttp://localhost:3000\n and not \nhttps://localhost:3000",
+            "title": "Wisko Gitea"
+        },
+        {
+            "location": "/wisko-gitea/#wisko-gitea",
+            "text": "",
+            "title": "wisko gitea"
+        },
+        {
+            "location": "/wisko-gitea/#before-you-begin-gitea-setup-info",
+            "text": "(see  wisko setup  for details on how gitea was set up).",
+            "title": "before you begin: gitea setup info"
+        },
+        {
+            "location": "/wisko-gitea/#where-is-gitea",
+            "text": "The wisko gitea instance is installed to  $GOPATH/src/code.gitea.io/gitea  and there is a symlink to this directory at  ~/gitea .  This directory is actually a cloned git repo, so you can see what files you've modified from the default by running a  git status .  The binary is in that folder, at  bin/gitea .",
+            "title": "where is gitea"
+        },
+        {
+            "location": "/wisko-gitea/#where-is-go",
+            "text": "Go is installed using  goenv , so the global version of go that goenv will set can be printed using:  goenv global  You can verify you have the goenv go installed by running:  which go  which should return  ~/.goenv/shims/go , and   go version  which should return 1.7.5.",
+            "title": "where is go"
+        },
+        {
+            "location": "/wisko-gitea/#task-summary",
+            "text": "Making gitea available via the subdomain  git.smallmelo.com  requires setting up a couple of components:  subdomain  web server to handle redirects  gitea configuration to tell gitea where it is hosted  https certificates valid for the subdomain",
+            "title": "task summary"
+        },
+        {
+            "location": "/wisko-gitea/#set-up-git-subdomain",
+            "text": "First thing is, we need to set up the subdomain  git.smallmelo.com  to redirect to the server. This depends on the hosting provider, but should be an A Name Record:  A Record :   Record: git  Value:",
+            "title": "set up git subdomain"
+        },
+        {
+            "location": "/wisko-gitea/#apache-web-server-settings",
+            "text": "Setting up a name record for the subdomain will result in requests for \"git.smallmelo.com\" and \"smallmelo.com\" to both go to your server. The server will be able to see what domain/subdomain was requested in each request, so we need to set up rules to handle the subdomain correctly.  If the git subdomain is not set up with the DNS provider yet, you can still test it locally. From whatever machine you're connecting to wisk as, add an entry to  /etc/hosts  that will map the subdomain to wisko's IP:  vim /etc/hosts  and add  159.65.75.41 git.smallmelo.com  (Do this on your machine, not on wisko.)",
+            "title": "apache web server settings"
+        },
+        {
+            "location": "/wisko-gitea/#apache-configuration-http",
+            "text": "Now we'll set up the Apache web server to redirect any http requests to  git.smallmelo.com  on port 80 on to gitea at port 3000.  Create a new apache config for this site at  /etc/apache2/sites-available/git-smallmelo.conf  that will contain all our settings. Set up a listener on port 80, all interfaces, that looks for requests to  git.smallmelo.com :  /etc/apache2/sites-available/git-smallmelo.conf :  <VirtualHost *:80>\n    ServerName git.smallmelo.com\n    ServerAdmin melo@smallmelo.com\n\n    # -------------------------\n    # Need to enable the following mods:\n    # a2enmod proxy\n    # a2enmod proxy_http\n\n    # Preserve original request (git.smallmelo.com)\n    ProxyPreserveHost On\n\n    # Set up proxy\n    <Proxy *>\n        Order allow,deny\n        Allow from all\n    </Proxy>\n    ProxyPass / http://localhost:3000/\n    ProxyPassReverse / http://localhost:3000/\n\n    # -------------------------\n\n    ErrorLog ${APACHE_LOG_DIR}/git-smallmelo-error.log\n    CustomLog ${APACHE_LOG_DIR}/git-smallmelo-access.log combined\n\n    # Note that we don't set a document root\n    # or permissions for a web directory\n    # because we're just forwarding traffic\n    # to gitea, which runs an entirely separate\n    # web server.\n\n</VirtualHost>",
+            "title": "apache configuration: http"
+        },
+        {
+            "location": "/wisko-gitea/#apache-configuration-https",
+            "text": "We also need to set up Apache to redirect https requests to  git.smallmelo.com  on port 443 to gitea at port 3000.  This will require an HTTPS certificate for  git.smallmelo.com , so fire up lets encrypt.",
+            "title": "apache configuration: https"
+        },
+        {
+            "location": "/wisko-gitea/#making-apache-certificate",
+            "text": "Create an https apache config for this site at  /etc/apache2/sites-available/git-smallmelo-le-ssl.conf  that will contain all our settings. Set up a listener on port 443, all interfaces, that looks for requests to  git.smallmelo.com .  Run the certbot:  $ sudo certbot certonly --non-interactive --agree-tos --email \"melo@smallmelo.com\" --apache -d \"git.smallmelo.com\"  This will take a minute, but should conclude with:  IMPORTANT NOTES:\n - Congratulations! Your certificate and chain have been saved at:\n   /etc/letsencrypt/live/git.smallmelo.com/fullchain.pem\n   Your key file has been saved at:\n   /etc/letsencrypt/live/git.smallmelo.com/privkey.pem\n   Your cert will expire on 2018-06-24. To obtain a new or tweaked\n   version of this certificate in the future, simply run certbot\n   again. To non-interactively renew *all* of your certificates, run\n   \"certbot renew\"\n - If you like Certbot, please consider supporting our work by:\n\n   Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n   Donating to EFF:                    https://eff.org/donate-le",
+            "title": "making apache certificate"
+        },
+        {
+            "location": "/wisko-gitea/#apache-configuration-https-revisited",
+            "text": "Note that once the HTTPS request hits the server, the proxy does not need to happen over HTTPS since it happens within a single machine.  /etc/apache2/sites-available/git-smallmelo-le-ssl.conf :  <IfModule mod_ssl.c>\n    <VirtualHost *:443>\n        ServerName git.smallmelo.com\n        ServerAdmin melo@smallmelo.com\n\n        ErrorLog ${APACHE_LOG_DIR}/git-smallmelo-ssl-error.log\n        CustomLog ${APACHE_LOG_DIR}/git-smallmelo-ssl-access.log combined\n\n        # -------------------------\n        # Need to enable the following mods:\n\n        # a2enmod proxy\n        # a2enmod proxy_http\n\n        SSLEngine on\n        SSLProxyEngine On\n        Include /etc/letsencrypt/options-ssl-apache.conf\n        SSLCertificateFile /etc/letsencrypt/live/git.smallmelo.com/fullchain.pem\n        SSLCertificateKeyFile /etc/letsencrypt/live/git.smallmelo.com/privkey.pem\n\n        # Preserve original request (git.smallmelo.com)\n        ProxyPreserveHost On\n\n        # Set up proxy\n        <Proxy *>\n            Order allow,deny\n            Allow from all\n        </Proxy>\n        ProxyPass / http://localhost:3000/\n        ProxyPassReverse / http://localhost:3000/\n\n        # -------------------------\n\n    </VirtualHost>\n</IfModule>",
+            "title": "apache configuration: https (revisited)"
+        },
+        {
+            "location": "/wisko-gitea/#enable-and-activate",
+            "text": "Now enable the mods:  a2enmod proxy\na2enmod proxy_http  Now enable the site:  a2ensite git-smallmelo\na2ensite git-smallmelo-le-ssl  Now activate the site:  service apache2 reload  Once the A Name DNS record propagates, you can test out the Apache configuration.  Run a dummy HTTP web server on port 3000:  cat \"<h2>hello world</h2>\" > index.html\npython3 -m http.server 3000  Now if you visit the subdomain:  http://git.smallmelo.com  you should see a hit in the window running the HTTP server on port 3000.",
+            "title": "enable and activate"
+        },
+        {
+            "location": "/wisko-gitea/#gitea-configuration",
+            "text": "",
+            "title": "gitea configuration"
+        },
+        {
+            "location": "/wisko-gitea/#gitea-version",
+            "text": "Start out by checking which version of gitea you have. We have checked out release  1.2 , which means that our git repo is in a \"headless\" state. Any changes that we make are going to go into a dead end.  But that's perfect - we can keep track of all our changes relative to version 1.2, and revert any changes we don't want anymore.  Make the following changes to the default  app.ini  gitea config file:  RUN_USER = melo\n\nDOMAIN = git.smallmelo.com\nROOT_URL = %(PROTOCOL)s://%(DOMAIN)s/  (Note, you can use git diff to pick up the changes in the file.)  Kill any instances of gitea that are already running on port 3000, and start up the gitea server:  cd ~/gitea\n./gitea web  (or, do it in a screen,  as mentioned in the wisko setup doc ).",
+            "title": "gitea version"
+        },
+        {
+            "location": "/wisko-gitea/#https-certs",
+            "text": "See the above modifications to the document about certificates. A new SSL certificate for the git subdomain ( git.smallmelo.com ) was needed, so we used certbot to make it.  To explain the HTTPS certificate setup for git.smallmelo.com a bit more:   Gitea runs its own web server, hosts its own files, and does not require an Apache server to run. We're just using Apache for convenience.  Just as HTTP requests to smallmelo.com always go to port 80, where there is an Apache server listening, HTTPS requests to smallmelo.com always go to port 443, where there is also an Apache server listening  HTTPS requests are handled by the Apache web server, so the certificates to create an encrypted session are handled by the Apache web server  Apache must have an SSL certifiate for  git.smallmelo.com  to make the connection, or the browser will complain that the server is not configured correctly  When we make a request for a gitea resource (say,  https://git.smallmelo.com/melo/my-cool-project ), the subdomain tells Apache where to forward the request (to gitea on port 3000), and the rest of the url ( /melo/my-cool-project ) is passed on to gitea, unmodified  The request from Apache to gitea happens on a single machine, so the connection does not need to be encrypted, hence Apache's proxy requests go to  http://localhost:3000  and not  https://localhost:3000",
+            "title": "https certs"
+        },
+        {
+            "location": "/geoserver-https/",
+            "text": "Installing Geoserver & Connecting Over HTTPS\n\n\nInstalling Geoserver instructions\n\n\nInstall JRE 8\n\n\ninstall jre 8\n\n\nsudo apt-get update\nsudo apt-get install default-jre\n\n\n\n\nCreate geoserver folder\n\n\nin \n/usr/share\n:\n\n\nmkdir geoserver\n\n\n\n\nDownloaded geoserver on my computer, then ftp it to wisko\n\n\n\n\nDownload geoserver files on my computer\n\n\nunzip\n\n\ncopy files from the geoserver folder onto wisko:\n\n\n\n\nfrom my computer:\n\n\nscp -r /Users/melo/Desktop/geoserver-2.13.0  melo@159.65.75.41:/usr/share/geoserver\n\n\n\n\npermission denied. fixed with:\n\n\nsudo chown -R $USER:$USER /usr/share/geoserver\n\n\n\n\n\nbut then i decided to use FileZilla to transfer the files once I fixed my pemissions. Maybe another day, scp.\n\n\nadd env variable\n\n\necho \"export GEOSERVER_HOME=/usr/share/geoserver\" >\\> ~/.profile\n\n\nmake myself the owner\n\n\nsudo chown -R USER_NAME /usr/share/geoserver/\n\n\nstart geoserver\n\n\ncd /usr/share/geoserver/bin\nsh startup.sh\n\n\n\n\n\n\n\nsetting up certs\n\n\nTo enable SSL connections to the geoserver, let Apache handle the SSL connections, and then pass the requests on to geoserver locally.\n\n\nApache already has certificates living at:\n\n\n/etc/letsencrypt/live/smallmelo.com\n\n\n\n\nand an HTTPS configuration file at:\n\n\n/etc/apache2/sites-avaiable/smallmelo-le-ssl.conf\n\n\n\n\nModify the SSL configuration file to accept any URLs ending in \ngeoserver/\n and forward them to the geoserver on port 8080.\n\n\nThere should be a \n<VirtualHost>\n block that controls the settings for HTTPS requests. Add a \n<Location>\n block to configure the behavior for geoserver URLs (note the order):\n\n\n<VirtualHost *:443>\n\n    ...\n\n    # This block is new:\n    <Location /geoserver>\n        ProxyPass         http://localhost:8080/geoserver\n        ProxyPassReverse  http://localhost:8080/geoserver\n        Order allow,deny\n        Allow from all\n    </Location>\n\n    ...\n\n    # This must come after /geoserver block\n    <Directory /var/www/smallmelo/public_html>\n        ...\n    </Directory>\n\n</Location>\n\n\n\n\nNote that the reverse proxy we have set up will forward requests \nunencrypted\n to the geoserver at port 8080, but because this happens within a single machine, there is no need to encrypt it.\n\n\nNow ensure the proxy mod is installed:\n\n\n$ a2enmod proxy\n\n\n\n\nand restart the server:\n\n\n$ sudo service apache2 restart\n\n\n\n\nOne other thing we had to do was ensure that Jetty/geoserver were only listening for requests locally. This requies binding Jetty to the IP address 127.0.0.1.\n\n\nTo do this, we modify one parameter in \napp.ini\n:\n\n\njetty.host=127.0.0.1\n\n\n\n\nRestart geoserver:\n\n\nkillall geoserver && sh /usr/share/geoserver/bin/startup.sh\n\n\n\n\nFinishing Touches\n\n\nBecause Geosever was setup in order to be used in a dev environment for an xcode project, we needed to be able to ping a wms service from the site.  \n\n\nThe attempt resulted in \nan error\n.\n\n\nThis line\n demonstrates that your network trace is seeing \"localhost:8080\", which it should not. So, it's an indication that the server might be returning URLs to resources that say \"localhost:8080\"\n\n\nThe solution:\n\n\nUpdate the proxy url in Geoserver's Global Settings:",
+            "title": "Connecting to Geoserver Over HTTPS"
+        },
+        {
+            "location": "/geoserver-https/#installing-geoserver-connecting-over-https",
+            "text": "Installing Geoserver instructions",
+            "title": "Installing Geoserver &amp; Connecting Over HTTPS"
+        },
+        {
+            "location": "/geoserver-https/#install-jre-8",
+            "text": "install jre 8  sudo apt-get update\nsudo apt-get install default-jre",
+            "title": "Install JRE 8"
+        },
+        {
+            "location": "/geoserver-https/#create-geoserver-folder",
+            "text": "in  /usr/share :  mkdir geoserver",
+            "title": "Create geoserver folder"
+        },
+        {
+            "location": "/geoserver-https/#downloaded-geoserver-on-my-computer-then-ftp-it-to-wisko",
+            "text": "Download geoserver files on my computer  unzip  copy files from the geoserver folder onto wisko:   from my computer:  scp -r /Users/melo/Desktop/geoserver-2.13.0  melo@159.65.75.41:/usr/share/geoserver  permission denied. fixed with:  sudo chown -R $USER:$USER /usr/share/geoserver  but then i decided to use FileZilla to transfer the files once I fixed my pemissions. Maybe another day, scp.",
+            "title": "Downloaded geoserver on my computer, then ftp it to wisko"
+        },
+        {
+            "location": "/geoserver-https/#add-env-variable",
+            "text": "echo \"export GEOSERVER_HOME=/usr/share/geoserver\" >\\> ~/.profile",
+            "title": "add env variable"
+        },
+        {
+            "location": "/geoserver-https/#make-myself-the-owner",
+            "text": "sudo chown -R USER_NAME /usr/share/geoserver/",
+            "title": "make myself the owner"
+        },
+        {
+            "location": "/geoserver-https/#start-geoserver",
+            "text": "cd /usr/share/geoserver/bin\nsh startup.sh",
+            "title": "start geoserver"
+        },
+        {
+            "location": "/geoserver-https/#setting-up-certs",
+            "text": "To enable SSL connections to the geoserver, let Apache handle the SSL connections, and then pass the requests on to geoserver locally.  Apache already has certificates living at:  /etc/letsencrypt/live/smallmelo.com  and an HTTPS configuration file at:  /etc/apache2/sites-avaiable/smallmelo-le-ssl.conf  Modify the SSL configuration file to accept any URLs ending in  geoserver/  and forward them to the geoserver on port 8080.  There should be a  <VirtualHost>  block that controls the settings for HTTPS requests. Add a  <Location>  block to configure the behavior for geoserver URLs (note the order):  <VirtualHost *:443>\n\n    ...\n\n    # This block is new:\n    <Location /geoserver>\n        ProxyPass         http://localhost:8080/geoserver\n        ProxyPassReverse  http://localhost:8080/geoserver\n        Order allow,deny\n        Allow from all\n    </Location>\n\n    ...\n\n    # This must come after /geoserver block\n    <Directory /var/www/smallmelo/public_html>\n        ...\n    </Directory>\n\n</Location>  Note that the reverse proxy we have set up will forward requests  unencrypted  to the geoserver at port 8080, but because this happens within a single machine, there is no need to encrypt it.  Now ensure the proxy mod is installed:  $ a2enmod proxy  and restart the server:  $ sudo service apache2 restart  One other thing we had to do was ensure that Jetty/geoserver were only listening for requests locally. This requies binding Jetty to the IP address 127.0.0.1.  To do this, we modify one parameter in  app.ini :  jetty.host=127.0.0.1  Restart geoserver:  killall geoserver && sh /usr/share/geoserver/bin/startup.sh",
+            "title": "setting up certs"
+        },
+        {
+            "location": "/geoserver-https/#finishing-touches",
+            "text": "Because Geosever was setup in order to be used in a dev environment for an xcode project, we needed to be able to ping a wms service from the site.    The attempt resulted in  an error .  This line  demonstrates that your network trace is seeing \"localhost:8080\", which it should not. So, it's an indication that the server might be returning URLs to resources that say \"localhost:8080\"",
+            "title": "Finishing Touches"
+        },
+        {
+            "location": "/geoserver-https/#the-solution",
+            "text": "Update the proxy url in Geoserver's Global Settings:",
+            "title": "The solution:"
         }
     ]
 }
