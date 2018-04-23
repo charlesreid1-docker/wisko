@@ -4,9 +4,11 @@ The wisko manual.
 
 IP: 159.65.75.41
 
-[wisko boot to root](/boot2root.md) by @charles
+[git repo - wisko manual](https://git.charlesreid1.com/charlesreid1/wisko-manual) by @charles
 
 [git repo - wisko dotfiles](https://git.charlesreid1.com/dotfiles/wisko) by @charles
+
+[wisko boot to root](/boot2root.md) by @charles
 
 [wisko FAQ](/faq.md) by @charles
 
