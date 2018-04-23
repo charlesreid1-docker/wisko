@@ -1,0 +1,14 @@
+{
+    "docs": [
+        {
+            "location": "/",
+            "text": "Wisko Manual\n\n\nThe wisko manual.\n\n\nIP: 159.65.75.41\n\n\nwisko boot to root\n by @charles\n\n\ngit repo - wisko dotfiles\n by @charles\n\n\nwisko FAQ\n by @charles\n\n\nlocked out of wisko\n by @melo and @charles\n\n\nsmallmelo.com migration: part 1 (ssh + wordpress)\n by @melo\n\n\nsmallmelo.com migration: part 2 (all the things)\n by @melo\n\n\nsmallmelo.com migration: part 3 (allthehatsformaps to smallmelo)\n by @melo\n\n\nwisko gitea\n by @charles\n\n\ninstalling geoserver and connecting over https\n by @melo and @charles",
+            "title": "Index"
+        },
+        {
+            "location": "/#wisko-manual",
+            "text": "The wisko manual.  IP: 159.65.75.41  wisko boot to root  by @charles  git repo - wisko dotfiles  by @charles  wisko FAQ  by @charles  locked out of wisko  by @melo and @charles  smallmelo.com migration: part 1 (ssh + wordpress)  by @melo  smallmelo.com migration: part 2 (all the things)  by @melo  smallmelo.com migration: part 3 (allthehatsformaps to smallmelo)  by @melo  wisko gitea  by @charles  installing geoserver and connecting over https  by @melo and @charles",
+            "title": "Wisko Manual"
+        }
+    ]
+}
