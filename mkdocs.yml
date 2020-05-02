@@ -14,7 +14,7 @@ theme:
     code: 'Roboto Mono'
 extra_css:
   - css/custom.css
-pages:
+nav:
   - 'Index' : 'index.md'
   - 'Wisko Boot to Root': 'boot2root.md'
   - 'Wisko FAQ': 'faq.md'
